@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: crates/tauri-plugin-permission-flow/package-lock.json
+
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Run library tests
+        run: cargo test --workspace --lib
+
+      - name: Check iced example builds
+        run: cargo check -p permission-flow-iced --examples
+
+      - name: Build Tauri guest package
+        working-directory: crates/tauri-plugin-permission-flow
+        run: npm ci && npm run build
+
+      - name: Verify core crate packaging
+        run: cargo publish -p permission-flow --dry-run
