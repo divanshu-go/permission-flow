@@ -36,7 +36,17 @@ public struct PermissionFlowButton: View {
             )
         } label: {
             Label {
-                Text(title ?? LocalizedStringResource(String.LocalizationValue(buttonState.titleKey), locale: locale, bundle: .module))
+                if let title {
+                    Text(title)
+                } else {
+                    Text(
+                        String(
+                            localized: String.LocalizationValue(buttonState.titleKey),
+                            bundle: .module,
+                            locale: locale
+                        )
+                    )
+                }
             } icon: {
                 Image(systemName: buttonState.systemImage)
                     .foregroundColor(buttonState.isGranted ? .green : .primary)
