@@ -1,5 +1,9 @@
 # permission-flow
 
+[![CI](https://github.com/veecore/permission-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/veecore/permission-flow/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/permission-flow.svg)](https://crates.io/crates/permission-flow)
+[![docs.rs](https://img.shields.io/docsrs/permission-flow)](https://docs.rs/permission-flow)
+
 `permission-flow` provides a Rust-friendly API for presenting the macOS
 permission guidance flow backed by the Swift/AppKit implementation in this
 workspace.
@@ -19,6 +23,13 @@ host app can determine about its own permission state.
 
 It does **not** authoritatively answer whether an arbitrary target `.app`
 bundle already has the requested permission.
+
+## Acknowledgements
+
+The Swift side of this crate builds on top of the excellent
+[`PermissionFlow`](https://github.com/jaywcjlove/PermissionFlow) project and
+uses [`swift-rs`](https://github.com/Brendonovich/swift-rs) for the bridge into
+Rust.
 
 ## Runtime note
 

@@ -1,5 +1,9 @@
 # permission-flow
 
+[![CI](https://github.com/veecore/permission-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/veecore/permission-flow/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/permission-flow.svg)](https://crates.io/crates/permission-flow)
+[![docs.rs](https://img.shields.io/docsrs/permission-flow)](https://docs.rs/permission-flow)
+
 `permission-flow` is a macOS-first workspace for guiding users through system
 permission onboarding from Rust apps.
 
@@ -9,9 +13,16 @@ The workspace currently contains:
 - `permission-flow-iced`: `iced`-friendly helpers on top of the core crate
 - `tauri-plugin-permission-flow`: a Tauri plugin and guest-side JS bindings
 
-## Publishing notes
+## Install
 
-The core crate is intended to be published first.
+Add the core crate:
+
+```toml
+[dependencies]
+permission-flow = "0.1.38"
+```
+
+## Publishing notes
 
 Because the final macOS executable links against Swift runtime libraries,
 downstream binary crates currently need this in their `build.rs`:
@@ -23,6 +34,13 @@ fn main() {
     }
 }
 ```
+
+## Acknowledgements
+
+This workspace builds on top of the excellent
+[`PermissionFlow`](https://github.com/jaywcjlove/PermissionFlow) Swift package
+and uses [`swift-rs`](https://github.com/Brendonovich/swift-rs) for the Rust to
+Swift bridge.
 
 ## Development
 
