@@ -4,10 +4,10 @@
   "description": "JavaScript bindings for tauri-plugin-permission-flow",
   "author": "Victor <victorayo206@gmail.com>",
   "license": "MIT",
-  "homepage": "https://github.com/Adesoji1/permission-flow",
+  "homepage": "https://github.com/veecore/permission-flow",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Adesoji1/permission-flow.git",
+    "url": "git+https://github.com/veecore/permission-flow.git",
     "directory": "crates/tauri-plugin-permission-flow"
   },
   "type": "module",
