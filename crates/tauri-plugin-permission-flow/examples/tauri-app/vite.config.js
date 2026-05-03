@@ -12,7 +12,7 @@ export default defineConfig({
       "@tauri-apps/api/core": fileURLToPath(
         new URL("./node_modules/@tauri-apps/api/core.js", import.meta.url)
       ),
-      "tauri-plugin-permission-flow-api": fileURLToPath(
+      "@veecore/tauri-plugin-permission-flow-api": fileURLToPath(
         new URL("../../guest-js/index.ts", import.meta.url)
       ),
     },

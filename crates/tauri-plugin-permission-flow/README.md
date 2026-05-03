@@ -27,7 +27,7 @@ Add the JavaScript package:
 ```json
 {
   "dependencies": {
-    "tauri-plugin-permission-flow-api": "0.1.39"
+    "@veecore/tauri-plugin-permission-flow-api": "0.1.39"
   }
 }
 ```
@@ -51,7 +51,7 @@ import {
   Permission,
   PermissionFlow,
   watchAuthorizationStatus,
-} from 'tauri-plugin-permission-flow-api'
+} from '@veecore/tauri-plugin-permission-flow-api'
 
 const flow = await PermissionFlow.create()
 
@@ -100,3 +100,9 @@ The plugin intentionally exposes two separate layers:
 - The JS wrapper now adds best-effort garbage-collection cleanup through `FinalizationRegistry`, but `close()` is still the deterministic and recommended cleanup path.
 - `authorizationState(...)` and `watchAuthorizationStatus(...)` are host-app status helpers. On macOS, the public permission-status APIs used by `permission-flow` describe the current host app or host process, not an arbitrary `.app` bundle path.
 - In other words, `appPath` controls which app bundle appears in the floating guidance flow, but it should not be confused with an authoritative "does that target app already have permission?" check.
+
+## Maintainer Note
+
+The guest package is published from GitHub Actions through npm trusted
+publishing. The repository workflow lives at
+`.github/workflows/publish-npm.yml`.

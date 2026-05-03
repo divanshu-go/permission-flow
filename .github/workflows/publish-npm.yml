@@ -1,0 +1,43 @@
+name: Publish npm Package
+
+on:
+  workflow_dispatch:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    if: github.repository == 'veecore/permission-flow'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: crates/tauri-plugin-permission-flow
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+          cache-dependency-path: crates/tauri-plugin-permission-flow/package-lock.json
+
+      - name: Install npm CLI for trusted publishing
+        run: npm install -g npm@11.5.1
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build guest package
+        run: npm run build
+
+      - name: Publish to npm
+        run: npm publish

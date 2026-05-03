@@ -1,5 +1,5 @@
 {
-  "name": "tauri-plugin-permission-flow-api",
+  "name": "@veecore/tauri-plugin-permission-flow-api",
   "version": "0.1.39",
   "description": "JavaScript bindings for tauri-plugin-permission-flow",
   "author": "Victor <victorayo206@gmail.com>",
@@ -9,6 +9,9 @@
     "type": "git",
     "url": "git+https://github.com/veecore/permission-flow.git",
     "directory": "crates/tauri-plugin-permission-flow"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "type": "module",
   "types": "./dist-js/index.d.ts",

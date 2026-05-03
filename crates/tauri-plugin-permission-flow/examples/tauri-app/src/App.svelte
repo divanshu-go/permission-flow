@@ -4,7 +4,7 @@
     Permission,
     PermissionAuthorizationState,
     PermissionFlow,
-  } from 'tauri-plugin-permission-flow-api'
+  } from '@veecore/tauri-plugin-permission-flow-api'
 
   const permissionOptions = [
     { label: 'Accessibility', value: Permission.Accessibility },

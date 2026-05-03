@@ -21,7 +21,7 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "tauri-plugin-permission-flow-api": ["../../guest-js/index.ts"]
+      "@veecore/tauri-plugin-permission-flow-api": ["../../guest-js/index.ts"]
     },
     /**
      * Typecheck JS in `.svelte` and `.js` files by default.
