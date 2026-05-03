@@ -19,7 +19,7 @@ Add the core crate:
 
 ```toml
 [dependencies]
-permission-flow = "0.1.38"
+permission-flow = "0.1.39"
 ```
 
 ## Publishing notes

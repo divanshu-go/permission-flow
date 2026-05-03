@@ -295,6 +295,30 @@
       "type": "string",
       "oneOf": [
         {
+          "description": "Enables the authorization_state command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-authorization-state",
+          "markdownDescription": "Enables the authorization_state command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the authorization_state command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-authorization-state",
+          "markdownDescription": "Denies the authorization_state command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the create command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-create",
+          "markdownDescription": "Enables the create command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the create command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-create",
+          "markdownDescription": "Denies the create command without any pre-configured scope."
+        },
+        {
           "description": "Enables the start_flow command without any pre-configured scope.",
           "type": "string",
           "const": "allow-start-flow",
@@ -319,10 +343,22 @@
           "markdownDescription": "Denies the stop_current_flow command without any pre-configured scope."
         },
         {
-          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-start-flow`\n- `allow-stop-current-flow`",
+          "description": "Enables the suggested_host_app_path command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-suggested-host-app-path",
+          "markdownDescription": "Enables the suggested_host_app_path command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the suggested_host_app_path command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-suggested-host-app-path",
+          "markdownDescription": "Denies the suggested_host_app_path command without any pre-configured scope."
+        },
+        {
+          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-create`\n- `allow-suggested-host-app-path`\n- `allow-authorization-state`\n- `allow-start-flow`\n- `allow-stop-current-flow`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-start-flow`\n- `allow-stop-current-flow`"
+          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-create`\n- `allow-suggested-host-app-path`\n- `allow-authorization-state`\n- `allow-start-flow`\n- `allow-stop-current-flow`"
         }
       ]
     }

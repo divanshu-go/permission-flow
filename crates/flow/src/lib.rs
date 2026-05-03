@@ -1,18 +1,34 @@
 //! Rust bindings for the macOS permission guidance flow shipped in this
 //! workspace's Swift/AppKit implementation.
+//!
+//! On non-macOS targets, this crate intentionally compiles as a no-op shim so
+//! cross-platform workspaces can still build. In that mode, controller methods
+//! quietly succeed and permission status resolves to `Unknown`.
 
-use std::ffi::{CStr, CString, NulError, OsString, c_void};
+use std::ffi::{CStr, CString, NulError};
 use std::fmt;
 use std::marker::PhantomData;
-use std::mem::{MaybeUninit, size_of};
-use std::os::raw::{c_char, c_int};
-use std::os::unix::ffi::{OsStrExt, OsStringExt};
-use std::path::{Path, PathBuf};
-use std::ptr::{NonNull, null_mut};
+use std::path::Path;
 use std::rc::Rc;
+
+#[cfg(target_os = "macos")]
+use std::ffi::OsString;
+#[cfg(target_os = "macos")]
+use std::ffi::c_void;
+#[cfg(target_os = "macos")]
+use std::mem::{MaybeUninit, size_of};
+#[cfg(target_os = "macos")]
+use std::os::raw::{c_char, c_int};
+#[cfg(target_os = "macos")]
+use std::os::unix::ffi::{OsStrExt, OsStringExt};
+#[cfg(target_os = "macos")]
+use std::path::PathBuf;
+#[cfg(target_os = "macos")]
+use std::ptr::{NonNull, null_mut};
 
 /// Main controller for driving the Swift permission flow from Rust.
 pub struct PermissionFlowController {
+    #[cfg(target_os = "macos")]
     pointer: NonNull<c_void>,
     not_send_or_sync: PhantomData<Rc<()>>,
 }
@@ -22,23 +38,34 @@ impl PermissionFlowController {
     ///
     /// This must be called on the macOS main thread.
     pub fn new() -> Result<Self, NewControllerError> {
-        let mut controller = null_mut();
-        let status = unsafe { permission_flow_controller_new(&mut controller) };
-        if status != OK_STATUS {
-            assert_eq!(
-                status, NOT_MAIN_THREAD_ERROR_STATUS,
-                "The shim should only report a non-main-thread error in this version"
-            );
-            return Err(NewControllerError(()));
+        #[cfg(target_os = "macos")]
+        {
+            let mut controller = null_mut();
+            let status = unsafe { permission_flow_controller_new(&mut controller) };
+            if status != OK_STATUS {
+                assert_eq!(
+                    status, NOT_MAIN_THREAD_ERROR_STATUS,
+                    "The shim should only report a non-main-thread error in this version"
+                );
+                return Err(NewControllerError(()));
+            }
+
+            // If this ever happens, the Rust and Swift sides have drifted out of contract.
+            let pointer =
+                NonNull::new(controller).expect("Shim returned ok for an invalid pointer");
+
+            Ok(Self {
+                pointer,
+                not_send_or_sync: PhantomData,
+            })
         }
 
-        // If this ever happens, the Rust and Swift sides have drifted out of contract.
-        let pointer = NonNull::new(controller).expect("Shim returned ok for an invalid pointer");
-
-        Ok(Self {
-            pointer,
-            not_send_or_sync: PhantomData,
-        })
+        #[cfg(not(target_os = "macos"))]
+        {
+            Ok(Self {
+                not_send_or_sync: PhantomData,
+            })
+        }
     }
 
     /// Starts a permission flow.
@@ -46,29 +73,46 @@ impl PermissionFlowController {
     /// The underlying library only keeps one panel open at a time, so starting
     /// a new flow closes the previous one.
     pub fn start_flow(&self, options: StartFlowOptions) -> Result<(), StartPermissionFlowError> {
-        let status = unsafe {
-            permission_flow_controller_start_flow(
-                self.pointer.as_ptr(),
-                options.permission.as_ffi(),
-                options.app_path.path.as_ptr(),
-                if options.use_click_source_frame { 1 } else { 0 },
-            )
-        };
+        #[cfg(target_os = "macos")]
+        {
+            let status = unsafe {
+                permission_flow_controller_start_flow(
+                    self.pointer.as_ptr(),
+                    options.permission.as_ffi(),
+                    options.app_path.path.as_ptr(),
+                    if options.use_click_source_frame { 1 } else { 0 },
+                )
+            };
 
-        if status != OK_STATUS {
-            Err(StartPermissionFlowError(status))
-        } else {
+            if status != OK_STATUS {
+                Err(StartPermissionFlowError(status))
+            } else {
+                Ok(())
+            }
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        {
+            let _ = options;
             Ok(())
         }
     }
 
     /// Stops the current permission flow, if one is active.
     pub fn stop_current_flow(&self) -> Result<(), StopPermissionFlowError> {
-        let status = unsafe { permission_flow_controller_close_panel(self.pointer.as_ptr()) };
+        #[cfg(target_os = "macos")]
+        {
+            let status = unsafe { permission_flow_controller_close_panel(self.pointer.as_ptr()) };
 
-        if status != OK_STATUS {
-            Err(StopPermissionFlowError(status))
-        } else {
+            if status != OK_STATUS {
+                Err(StopPermissionFlowError(status))
+            } else {
+                Ok(())
+            }
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        {
             Ok(())
         }
     }
@@ -98,6 +142,7 @@ impl Permission {
     /// Privacy & Security > Media & Apple Music.
     pub const MEDIA_APPLE_MUSIC: Permission = Permission(8);
 
+    #[cfg(target_os = "macos")]
     fn as_ffi(self) -> i8 {
         self.0 as i8
     }
@@ -124,22 +169,30 @@ impl Permission {
     pub fn authorization_state(
         self,
     ) -> Result<PermissionAuthorizationState, PermissionStatusError> {
-        let mut state = 0;
-        let status = unsafe { permission_flow_authorization_state(self.as_ffi(), &mut state) };
+        #[cfg(target_os = "macos")]
+        {
+            let mut state = 0;
+            let status = unsafe { permission_flow_authorization_state(self.as_ffi(), &mut state) };
 
-        if status != OK_STATUS {
-            return Err(PermissionStatusError(status));
+            if status != OK_STATUS {
+                return Err(PermissionStatusError(status));
+            }
+
+            let state = match state {
+                AUTHORIZATION_GRANTED_STATE => PermissionAuthorizationState::Granted,
+                AUTHORIZATION_NOT_GRANTED_STATE => PermissionAuthorizationState::NotGranted,
+                AUTHORIZATION_UNKNOWN_STATE => PermissionAuthorizationState::Unknown,
+                AUTHORIZATION_CHECKING_STATE => PermissionAuthorizationState::Checking,
+                _ => panic!("Shim returned an invalid authorization state"),
+            };
+
+            Ok(state)
         }
 
-        let state = match state {
-            AUTHORIZATION_GRANTED_STATE => PermissionAuthorizationState::Granted,
-            AUTHORIZATION_NOT_GRANTED_STATE => PermissionAuthorizationState::NotGranted,
-            AUTHORIZATION_UNKNOWN_STATE => PermissionAuthorizationState::Unknown,
-            AUTHORIZATION_CHECKING_STATE => PermissionAuthorizationState::Checking,
-            _ => panic!("Shim returned an invalid authorization state"),
-        };
-
-        Ok(state)
+        #[cfg(not(target_os = "macos"))]
+        {
+            Ok(PermissionAuthorizationState::Unknown)
+        }
     }
 }
 
@@ -162,7 +215,15 @@ impl AppPath {
     /// the first enclosing `.app` bundle it finds, which covers common cases
     /// like Terminal, iTerm, or an IDE-integrated terminal.
     pub fn suggested_host_app() -> Option<Self> {
-        suggested_host_app_path().and_then(|path| Self::try_from(path.as_path()).ok())
+        #[cfg(target_os = "macos")]
+        {
+            suggested_host_app_path().and_then(|path| Self::try_from(path.as_path()).ok())
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        {
+            None
+        }
     }
 }
 
@@ -236,13 +297,16 @@ pub struct PermissionStatusError(i8);
 
 impl Drop for PermissionFlowController {
     fn drop(&mut self) {
-        // SAFETY: PermissionFlowController is created on the main thread. Since
-        // it is neither Send nor Sync, it cannot be soundly moved away from the
-        // main thread. That means Drop, and practically every other method, also
-        // runs on the main thread.
-        let status = unsafe { permission_flow_controller_free(self.pointer.as_ptr()) };
+        #[cfg(target_os = "macos")]
+        {
+            // SAFETY: PermissionFlowController is created on the main thread. Since
+            // it is neither Send nor Sync, it cannot be soundly moved away from the
+            // main thread. That means Drop, and practically every other method, also
+            // runs on the main thread.
+            let status = unsafe { permission_flow_controller_free(self.pointer.as_ptr()) };
 
-        debug_assert_eq!(status, OK_STATUS);
+            debug_assert_eq!(status, OK_STATUS);
+        }
     }
 }
 
@@ -270,8 +334,15 @@ impl TryFrom<&Path> for AppPath {
     type Error = NulError;
 
     fn try_from(path: &Path) -> Result<Self, NulError> {
+        #[cfg(unix)]
+        let bytes = path.as_os_str().as_bytes();
+        #[cfg(not(unix))]
+        let owned = path.to_string_lossy().into_owned();
+        #[cfg(not(unix))]
+        let bytes = owned.as_bytes();
+
         Ok(Self {
-            path: CString::new(path.as_os_str().as_bytes())?,
+            path: CString::new(bytes)?,
         })
     }
 }
@@ -327,16 +398,24 @@ impl std::error::Error for StartPermissionFlowError {}
 impl std::error::Error for StopPermissionFlowError {}
 impl std::error::Error for PermissionStatusError {}
 
+#[cfg(target_os = "macos")]
 const OK_STATUS: i8 = 0;
 const INVALID_PERMISSION_ERROR_STATUS: i8 = 1;
 const NULL_CONTROLLER_ERROR_STATUS: i8 = 2;
 const NOT_MAIN_THREAD_ERROR_STATUS: i8 = 3;
+#[cfg(target_os = "macos")]
 const AUTHORIZATION_GRANTED_STATE: i8 = 0;
+#[cfg(target_os = "macos")]
 const AUTHORIZATION_NOT_GRANTED_STATE: i8 = 1;
+#[cfg(target_os = "macos")]
 const AUTHORIZATION_UNKNOWN_STATE: i8 = 2;
+#[cfg(target_os = "macos")]
 const AUTHORIZATION_CHECKING_STATE: i8 = 3;
+#[cfg(target_os = "macos")]
 const PROC_PIDTBSDINFO: c_int = 3;
+#[cfg(target_os = "macos")]
 const PROC_PIDPATHINFO_MAXSIZE: usize = 4096;
+#[cfg(target_os = "macos")]
 const MAXCOMLEN: usize = 16;
 
 fn format_error(err: i8) -> &'static str {
@@ -348,6 +427,7 @@ fn format_error(err: i8) -> &'static str {
     }
 }
 
+#[cfg(target_os = "macos")]
 fn suggested_host_app_path() -> Option<PathBuf> {
     let current_executable = std::env::current_exe().ok()?;
     if let Some(app_bundle) = enclosing_app_bundle(&current_executable) {
@@ -371,6 +451,7 @@ fn suggested_host_app_path() -> Option<PathBuf> {
     None
 }
 
+#[cfg(any(target_os = "macos", test))]
 fn enclosing_app_bundle(path: &Path) -> Option<&Path> {
     path.ancestors().find(|ancestor| {
         ancestor
@@ -380,6 +461,7 @@ fn enclosing_app_bundle(path: &Path) -> Option<&Path> {
     })
 }
 
+#[cfg(target_os = "macos")]
 fn parent_pid(pid: c_int) -> Option<c_int> {
     let mut info = MaybeUninit::<ProcBsdInfo>::zeroed();
     let size = size_of::<ProcBsdInfo>() as c_int;
@@ -391,6 +473,7 @@ fn parent_pid(pid: c_int) -> Option<c_int> {
     Some(unsafe { info.assume_init() }.pbi_ppid as c_int)
 }
 
+#[cfg(target_os = "macos")]
 fn process_path(pid: c_int) -> Option<PathBuf> {
     let mut buffer = [0_u8; PROC_PIDPATHINFO_MAXSIZE];
     let result = unsafe { proc_pidpath(pid, buffer.as_mut_ptr().cast(), buffer.len() as u32) };
@@ -406,6 +489,7 @@ fn process_path(pid: c_int) -> Option<PathBuf> {
     Some(PathBuf::from(OsString::from_vec(bytes.to_vec())))
 }
 
+#[cfg(target_os = "macos")]
 unsafe extern "C" {
     fn permission_flow_controller_new(controller_out: *mut *mut c_void) -> i8;
     fn permission_flow_controller_free(controller: *mut c_void) -> i8;
@@ -427,6 +511,7 @@ unsafe extern "C" {
     fn proc_pidpath(pid: c_int, buffer: *mut c_void, buffersize: u32) -> c_int;
 }
 
+#[cfg(target_os = "macos")]
 #[repr(C)]
 struct ProcBsdInfo {
     pbi_flags: u32,
@@ -462,6 +547,7 @@ mod tests {
     use std::path::Path;
 
     #[test]
+    #[cfg(target_os = "macos")]
     fn new_controller_returns_not_main_thread_on_worker_thread() {
         let handle = std::thread::spawn(|| PermissionFlowController::new().err());
         let result = handle.join().expect("worker thread panicked");
@@ -514,6 +600,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "macos")]
     #[ignore = "requires the macOS main thread, which the Rust test harness does not guarantee"]
     fn start_controller_does_not_panic_on_invalid_permission() {
         let controller = PermissionFlowController::new().unwrap();

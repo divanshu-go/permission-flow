@@ -1,8 +1,9 @@
 <script>
+  import { onMount } from 'svelte'
   import {
     Permission,
-    startFlow,
-    stopCurrentFlow,
+    PermissionAuthorizationState,
+    PermissionFlow,
   } from 'tauri-plugin-permission-flow-api'
 
   const permissionOptions = [
@@ -16,173 +17,226 @@
     { label: 'Media & Apple Music', value: Permission.MediaAppleMusic },
   ]
 
+  const useClickSourceFrame = true
   let permission = $state(Permission.Accessibility)
-  let appPath = $state('/System/Applications/TextEdit.app')
-  let useClickSourceFrame = $state(true)
-  let status = $state('Idle')
+  let flow = $state(null)
+  let appPath = $state(null)
+  let authorizationState = $state(PermissionAuthorizationState.Checking)
+  let statusOverride = $state('')
 
-  function stamp(message) {
-    status = `[${new Date().toLocaleTimeString()}] ${message}`
+  function uiState() {
+    if (!flow) {
+      return {
+        buttonLabel: 'Preparing…',
+        buttonClass: 'primary',
+        canStart: false,
+      }
+    }
+
+    if (!appPath) {
+      return {
+        buttonLabel: 'Unavailable',
+        buttonClass: 'primary',
+        canStart: false,
+      }
+    }
+
+    if (statusOverride) {
+      return {
+        buttonLabel:
+          authorizationState === PermissionAuthorizationState.Granted
+            ? 'Granted'
+            : 'Grant Access',
+        buttonClass:
+          authorizationState === PermissionAuthorizationState.Granted
+            ? 'primary granted'
+            : 'primary',
+        canStart: authorizationState !== PermissionAuthorizationState.Checking,
+      }
+    }
+
+    switch (authorizationState) {
+      case PermissionAuthorizationState.Granted:
+        return {
+          buttonLabel: 'Granted',
+          buttonClass: 'primary granted',
+          canStart: true,
+        }
+      case PermissionAuthorizationState.Checking:
+        return {
+          buttonLabel: 'Checking…',
+          buttonClass: 'primary',
+          canStart: false,
+        }
+      case PermissionAuthorizationState.Unknown:
+        return {
+          buttonLabel: 'Grant Access',
+          buttonClass: 'primary',
+          canStart: true,
+        }
+      default:
+        return {
+          buttonLabel: 'Grant Access',
+          buttonClass: 'primary',
+          canStart: true,
+        }
+    }
   }
 
+  onMount(() => {
+    let cancelled = false
+
+    Promise.all([
+      PermissionFlow.create(),
+      PermissionFlow.suggestedHostAppPath(),
+    ])
+      .then(([createdFlow, suggestedAppPath]) => {
+        if (cancelled) {
+          void createdFlow.close()
+          return
+        }
+
+        flow = createdFlow
+        appPath = suggestedAppPath
+        statusOverride = ''
+      })
+      .catch((error) => {
+        statusOverride = error instanceof Error ? error.message : String(error)
+      })
+
+    return () => {
+      cancelled = true
+      const currentFlow = flow
+      flow = null
+      if (currentFlow) {
+        void currentFlow.close()
+      }
+    }
+  })
+
+  $effect(() => {
+    const selectedPermission = permission
+    statusOverride = ''
+
+    return PermissionFlow.watchAuthorizationStatus(
+      selectedPermission,
+      (nextState) => {
+        authorizationState = nextState
+        statusOverride = ''
+      },
+      {
+        onError(error) {
+          statusOverride = error instanceof Error ? error.message : String(error)
+        },
+      }
+    )
+  })
+
   async function handleStartFlow() {
+    if (!flow) {
+      statusOverride = 'Preparing the permission flow…'
+      return
+    }
+
+    if (!appPath) {
+      statusOverride = 'No host app was detected for this launch.'
+      return
+    }
+
     try {
-      await startFlow({
+      statusOverride = ''
+      await flow.startFlow({
         permission,
         appPath,
         useClickSourceFrame,
       })
-      stamp(`Started ${permission} flow for ${appPath}`)
     } catch (error) {
-      stamp(error instanceof Error ? error.message : String(error))
-    }
-  }
-
-  async function handleStopCurrentFlow() {
-    try {
-      await stopCurrentFlow()
-      stamp('Closed the current flow')
-    } catch (error) {
-      stamp(error instanceof Error ? error.message : String(error))
+      statusOverride = error instanceof Error ? error.message : String(error)
     }
   }
 </script>
 
 <main class="container">
-  <div class="card">
-    <p class="eyebrow">Tauri Plugin Demo</p>
-    <h1>permission-flow</h1>
-    <p class="lede">
-      Start the macOS permission flow from your Tauri frontend.
-    </p>
+  <section class="stack">
+    <select bind:value={permission}>
+      {#each permissionOptions as option}
+        <option value={option.value}>{option.label}</option>
+      {/each}
+    </select>
 
-    <label class="field">
-      <span>Permission</span>
-      <select bind:value={permission}>
-        {#each permissionOptions as option}
-          <option value={option.value}>{option.label}</option>
-        {/each}
-      </select>
-    </label>
-
-    <label class="field">
-      <span>Suggested app path</span>
-      <input bind:value={appPath} placeholder="/Applications/MyApp.app" />
-    </label>
-    <p class="hint">
-      Built-in macOS apps like TextEdit usually live under
-      <code>/System/Applications</code>.
-    </p>
-
-    <label class="toggle">
-      <input type="checkbox" bind:checked={useClickSourceFrame} />
-      <span>Use the click source frame animation</span>
-    </label>
-
-    <div class="actions">
-      <button class="primary" onclick={handleStartFlow}>Start flow</button>
-      <button class="secondary" onclick={handleStopCurrentFlow}>Stop flow</button>
-    </div>
-
-    <p class="status">{status}</p>
-  </div>
+    <button
+      class={uiState().buttonClass}
+      disabled={!uiState().canStart}
+      onclick={handleStartFlow}
+      type="button"
+    >
+      {uiState().buttonLabel}
+    </button>
+  </section>
 </main>
 
 <style>
+  :global(body) {
+    margin: 0;
+    font-family:
+      'SF Pro Display',
+      'Avenir Next',
+      'Segoe UI',
+      sans-serif;
+    background: #2b2b2b;
+  }
+
   .container {
     min-height: 100vh;
     display: grid;
     place-items: center;
-    padding: 2rem;
+    padding: 1.5rem;
   }
 
-  .card {
-    width: min(100%, 36rem);
-    padding: 2rem;
-    border-radius: 1.25rem;
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
-  }
-
-  .eyebrow {
-    margin: 0 0 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-size: 0.78rem;
-    color: #475569;
-  }
-
-  h1 {
-    margin: 0;
-  }
-
-  .lede {
-    margin: 0.75rem 0 1.5rem;
-    color: #334155;
-  }
-
-  .field {
+  .stack {
+    width: min(100%, 16rem);
     display: grid;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
+    gap: 0.9rem;
   }
 
-  .field span,
-  .toggle {
-    color: #0f172a;
-  }
-
-  select,
-  input {
+  select {
     width: 100%;
-    border: 1px solid #cbd5e1;
-    border-radius: 0.85rem;
-    padding: 0.85rem 1rem;
+    height: 2.5rem;
+    box-sizing: border-box;
+    padding: 0 0.85rem;
     background: white;
-  }
-
-  .toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin: 1rem 0 1.5rem;
-  }
-
-  .hint {
-    margin: -0.4rem 0 1rem;
-    color: #64748b;
-    font-size: 0.92rem;
-  }
-
-  .hint code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  }
-
-  .actions {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+    color: #0f172a;
+    font-size: 0.95rem;
   }
 
   button {
+    width: 100%;
+    min-height: 2.9rem;
     border: 0;
     border-radius: 999px;
-    padding: 0.8rem 1.2rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.98rem;
+    font-weight: 650;
     cursor: pointer;
+    transition:
+      background-color 140ms ease,
+      box-shadow 140ms ease,
+      opacity 140ms ease;
   }
 
   .primary {
     background: #0f172a;
     color: white;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
   }
 
-  .secondary {
-    background: #e2e8f0;
-    color: #0f172a;
+  .primary.granted {
+    background: #15803d;
+    box-shadow: 0 12px 30px rgba(21, 128, 61, 0.22);
   }
 
-  .status {
-    margin-top: 1rem;
-    color: #475569;
+  button:disabled {
+    cursor: default;
+    opacity: 0.7;
   }
 </style>

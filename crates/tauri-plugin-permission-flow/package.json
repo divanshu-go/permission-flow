@@ -1,6 +1,6 @@
 {
   "name": "tauri-plugin-permission-flow-api",
-  "version": "0.1.38",
+  "version": "0.1.39",
   "description": "JavaScript bindings for tauri-plugin-permission-flow",
   "author": "Victor <victorayo206@gmail.com>",
   "license": "MIT",

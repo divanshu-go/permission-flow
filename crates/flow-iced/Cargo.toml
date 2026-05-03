@@ -14,5 +14,5 @@ keywords = ["macos", "permissions", "iced", "gui", "tcc"]
 
 [dependencies]
 iced = { version = "0.13.1", features = ["tokio"] }
-permission-flow = { version = "0.1.38", path = "../flow" }
+permission-flow = { version = "0.1.39", path = "../flow" }
 thiserror = "2"

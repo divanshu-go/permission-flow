@@ -1,15 +1,19 @@
 use serde::de::DeserializeOwned;
 use tauri::{
-    AppHandle, Runtime,
+    AppHandle, ResourceId, Runtime,
     plugin::{PluginApi, PluginHandle},
 };
 
+use crate::Error;
 use crate::models::*;
 
 #[cfg(target_os = "ios")]
 tauri::ios_plugin_binding!(init_plugin_permission_flow);
 
-// initializes the Kotlin or Swift plugin classes
+/// Initializes the mobile plugin binding.
+///
+/// The public crate currently targets the macOS desktop experience, so the
+/// mobile backend remains a thin placeholder until a mobile flow exists.
 pub fn init<R: Runtime, C: DeserializeOwned>(
     _app: &AppHandle<R>,
     api: PluginApi<R, C>,
@@ -21,19 +25,43 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
     Ok(PermissionFlowPlugin(handle))
 }
 
-/// Access to the permission-flow APIs.
+/// Access to the mobile permission-flow APIs.
 pub struct PermissionFlowPlugin<R: Runtime>(PluginHandle<R>);
 
 impl<R: Runtime> PermissionFlowPlugin<R> {
-    pub fn start_flow(&self, payload: StartFlowRequest) -> crate::Result<()> {
+    /// Mobile does not currently expose a controller-handle story.
+    pub fn create(&self) -> crate::Result<ResourceId> {
+        Err(Error::UnsupportedPlatform)
+    }
+
+    /// Reserved for a future mobile implementation.
+    pub fn start_flow(&self, controller_id: u64, payload: StartFlowRequest) -> crate::Result<()> {
+        let _ = controller_id;
         self.0
             .run_mobile_plugin("start_flow", payload)
             .map_err(Into::into)
     }
 
-    pub fn stop_current_flow(&self) -> crate::Result<()> {
+    /// Reserved for a future mobile implementation.
+    pub fn stop_current_flow(&self, controller_id: u64) -> crate::Result<()> {
+        let _ = controller_id;
         self.0
             .run_mobile_plugin("stop_current_flow", ())
             .map_err(Into::into)
+    }
+
+    /// Reserved for a future mobile implementation.
+    pub fn authorization_state(
+        &self,
+        permission: Permission,
+    ) -> crate::Result<PermissionAuthorizationState> {
+        let _ = permission;
+        Err(Error::UnsupportedPlatform)
+    }
+
+    /// Returns `None` because mobile platforms do not currently expose a host
+    /// app bundle path in this plugin.
+    pub fn suggested_host_app_path(&self) -> crate::Result<Option<String>> {
+        Ok(None)
     }
 }

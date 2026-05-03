@@ -8,6 +8,21 @@
 permission guidance flow backed by the Swift/AppKit implementation in this
 workspace.
 
+## Platform behavior
+
+This crate is designed for macOS, but it now compiles on other operating
+systems too.
+
+Outside macOS:
+
+- `PermissionFlowController::new()` succeeds with a no-op controller
+- `start_flow()` and `stop_current_flow()` become no-ops
+- `Permission::authorization_state()` returns `PermissionAuthorizationState::Unknown`
+- `AppPath::suggested_host_app()` returns `None`
+
+That keeps cross-platform Rust workspaces buildable without pretending the
+actual macOS permission UI exists on those platforms.
+
 ## What it does
 
 - Creates a `PermissionFlowController` on the macOS main thread

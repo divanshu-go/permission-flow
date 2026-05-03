@@ -2,6 +2,7 @@ use std::ffi::NulError;
 
 use serde::{Serialize, ser::Serializer};
 
+/// Result type used by the Tauri plugin surface.
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, thiserror::Error)]
@@ -12,17 +13,18 @@ pub enum Error {
     InvalidAppPath(#[from] NulError),
     #[error("failed to receive a result from the main thread")]
     MainThreadChannelClosed,
+    #[error("permission flow handle has already been closed")]
+    DriverClosed,
     #[error(transparent)]
     Tauri(#[from] tauri::Error),
-    #[cfg(target_os = "macos")]
     #[error(transparent)]
     NewController(#[from] permission_flow::NewControllerError),
-    #[cfg(target_os = "macos")]
     #[error(transparent)]
     StartFlow(#[from] permission_flow::StartPermissionFlowError),
-    #[cfg(target_os = "macos")]
     #[error(transparent)]
     StopFlow(#[from] permission_flow::StopPermissionFlowError),
+    #[error(transparent)]
+    PermissionStatus(#[from] permission_flow::PermissionStatusError),
     #[cfg(mobile)]
     #[error(transparent)]
     PluginInvoke(#[from] tauri::plugin::mobile::PluginInvokeError),

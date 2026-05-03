@@ -10,6 +10,15 @@ It also provides a built-in `subscription()` and `update(...)` pair for
 host-app status refreshes, so apps do not need to hand-roll timer or
 window-focus refresh logic themselves.
 
+## Platform behavior
+
+`permission-flow-iced` is intended for macOS, but it compiles on other
+platforms too because the underlying `permission-flow` crate now exposes a
+no-op controller there.
+
+Outside macOS, button presses do nothing and status resolves to `Unknown`, but
+your `iced` app can still build cleanly in a cross-platform workspace.
+
 ## Important status warning
 
 `Permission::authorization_state()` and `PermissionFlowButton::button_state()`
