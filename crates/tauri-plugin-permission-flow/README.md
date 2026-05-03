@@ -30,7 +30,7 @@ Add the Rust plugin in your Tauri app's `src-tauri/Cargo.toml`:
 
 ```toml
 [dependencies]
-tauri-plugin-permission-flow = "0.1.39"
+tauri-plugin-permission-flow = "0.1.40"
 ```
 
 Register it in your Tauri builder:
@@ -45,7 +45,7 @@ Add the JavaScript package:
 ```json
 {
   "dependencies": {
-    "@veecore/tauri-plugin-permission-flow-api": "0.1.39"
+    "@veecore/tauri-plugin-permission-flow-api": "0.1.40"
   }
 }
 ```

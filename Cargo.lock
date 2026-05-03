@@ -3812,7 +3812,7 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "permission-flow"
-version = "0.1.39"
+version = "0.1.40"
 dependencies = [
  "iced",
  "swift-rs",
@@ -3820,7 +3820,7 @@ dependencies = [
 
 [[package]]
 name = "permission-flow-iced"
-version = "0.1.39"
+version = "0.1.40"
 dependencies = [
  "iced",
  "permission-flow",
@@ -5336,7 +5336,7 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin-permission-flow"
-version = "0.1.39"
+version = "0.1.40"
 dependencies = [
  "permission-flow",
  "serde",

@@ -31,15 +31,15 @@ Add the core crate:
 
 ```toml
 [dependencies]
-permission-flow = "0.1.39"
+permission-flow = "0.1.40"
 ```
 
 Or use one of the higher-level packages:
 
 ```toml
 [dependencies]
-permission-flow-iced = "0.1.39"
-tauri-plugin-permission-flow = "0.1.39"
+permission-flow-iced = "0.1.40"
+tauri-plugin-permission-flow = "0.1.40"
 ```
 
 The Tauri guest package is published separately on npm as:
@@ -47,7 +47,7 @@ The Tauri guest package is published separately on npm as:
 ```json
 {
   "dependencies": {
-    "@veecore/tauri-plugin-permission-flow-api": "0.1.39"
+    "@veecore/tauri-plugin-permission-flow-api": "0.1.40"
   }
 }
 ```
