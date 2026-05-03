@@ -1,10 +1,28 @@
 # Tauri Plugin permission-flow
 
+[![CI](https://github.com/veecore/permission-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/veecore/permission-flow/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/tauri-plugin-permission-flow.svg)](https://crates.io/crates/tauri-plugin-permission-flow)
+[![docs.rs](https://img.shields.io/docsrs/tauri-plugin-permission-flow)](https://docs.rs/tauri-plugin-permission-flow)
+
 Tauri bindings for the `permission-flow` macOS permission UI.
 
 The plugin is designed for macOS, but it compiles in cross-platform Tauri
 workspaces too. Outside macOS, controller creation still succeeds, flow
 commands become no-ops, and host-app status resolves to `unknown`.
+
+![permission-flow demo](https://raw.githubusercontent.com/veecore/permission-flow/main/assets/demo-readme.gif)
+
+## What you get
+
+The Tauri package gives you two layers:
+
+- `PermissionFlow`: a handle-backed controller for opening the floating
+  permission guidance UI
+- `authorizationState(...)` and `watchAuthorizationStatus(...)`: host-app
+  status helpers for reflecting permission state in your frontend
+
+Use the controller when you want to start the flow. Use the status helpers when
+you want your UI to react to the current host app's permission state.
 
 ## Install
 
@@ -32,7 +50,8 @@ Add the JavaScript package:
 }
 ```
 
-Because the final macOS executable links the Swift runtime, add this to your app's `src-tauri/build.rs`:
+Because the final macOS executable links the Swift runtime, add this to your
+app's `src-tauri/build.rs`:
 
 ```rust
 fn main() {
@@ -44,24 +63,25 @@ fn main() {
 }
 ```
 
-## Use
+## Quick start
 
 ```ts
 import {
   Permission,
   PermissionFlow,
+  suggestedHostAppPath,
   watchAuthorizationStatus,
 } from '@veecore/tauri-plugin-permission-flow-api'
 
 const flow = await PermissionFlow.create()
+const appPath = await suggestedHostAppPath()
 
-await flow.startFlow({
-  permission: Permission.Accessibility,
-  appPath: '/Applications/MyApp.app',
-})
-
-await flow.stopCurrentFlow()
-await flow.close()
+if (appPath) {
+  await flow.startFlow({
+    permission: Permission.Accessibility,
+    appPath,
+  })
+}
 
 const stopWatching = watchAuthorizationStatus(
   Permission.Accessibility,
@@ -71,14 +91,10 @@ const stopWatching = watchAuthorizationStatus(
 )
 
 stopWatching()
+await flow.close()
 ```
 
-## API Shape
-
-The plugin intentionally exposes two separate layers:
-
-- `PermissionFlow`: a handle-backed controller for opening and closing the floating guidance UI
-- `authorizationState(...)` / `watchAuthorizationStatus(...)`: host-app status helpers that do not need a controller handle
+## API shape
 
 `startFlow` accepts:
 
@@ -86,12 +102,30 @@ The plugin intentionally exposes two separate layers:
 - `appPath`: the app bundle path to suggest inside the permission flow
 - `useClickSourceFrame`: optional, defaults to `true`
 
+`suggestedHostAppPath()`:
+
+- returns a best-effort `.app` bundle path for the current launch context
+- is a good default for examples, dev builds, IDE-integrated terminals, and
+  bundled Tauri apps
+- returns `null` when there is no meaningful host app bundle to infer
+
 `watchAuthorizationStatus`:
 
 - immediately publishes the current host-app status by default, even if it was already granted before your app started
 - then republishes only when the status actually changes
 - refreshes on window focus, on visibility changes, and on a light interval by default
 - returns a cleanup function you can call when your UI unmounts
+
+## Example app
+
+The repo includes a tiny demo app under
+`crates/tauri-plugin-permission-flow/examples/tauri-app`.
+
+It intentionally stays minimal:
+
+- one permission picker
+- one button
+- button state driven by the host-app authorization watcher
 
 ## Notes
 

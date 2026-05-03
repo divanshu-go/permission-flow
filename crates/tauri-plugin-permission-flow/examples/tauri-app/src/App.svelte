@@ -116,6 +116,7 @@
 
   $effect(() => {
     const selectedPermission = permission
+    authorizationState = PermissionAuthorizationState.Checking
     statusOverride = ''
 
     return PermissionFlow.watchAuthorizationStatus(

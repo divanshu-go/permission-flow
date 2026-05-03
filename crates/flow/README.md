@@ -8,6 +8,40 @@
 permission guidance flow backed by the Swift/AppKit implementation in this
 workspace.
 
+![permission-flow demo](https://raw.githubusercontent.com/veecore/permission-flow/main/assets/demo-readme.gif)
+
+## What it does
+
+- Creates a `PermissionFlowController` on the macOS main thread
+- Starts guided flows for supported privacy panes
+- Infers a likely host app bundle with `AppPath::suggested_host_app()`
+- Exposes host-app permission status checks through
+  `Permission::authorization_state()`
+
+Supported permissions:
+
+- Accessibility
+- Input Monitoring
+- Screen Recording
+- App Management
+- Bluetooth
+- Developer Tools
+- Full Disk Access
+- Media & Apple Music
+
+## Quick start
+
+```rust
+use permission_flow::{AppPath, Permission, PermissionFlowController, StartFlowOptions};
+
+let controller = PermissionFlowController::new()?;
+let app_path = AppPath::suggested_host_app()
+    .expect("expected a host app bundle in this launch context");
+
+controller.start_flow(StartFlowOptions::new(Permission::ACCESSIBILITY, app_path))?;
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
 ## Platform behavior
 
 This crate is designed for macOS, but it now compiles on other operating
@@ -23,14 +57,6 @@ Outside macOS:
 That keeps cross-platform Rust workspaces buildable without pretending the
 actual macOS permission UI exists on those platforms.
 
-## What it does
-
-- Creates a `PermissionFlowController` on the macOS main thread
-- Starts guided flows for supported privacy panes
-- Infers a reasonable host app bundle with `AppPath::suggested_host_app()`
-- Exposes host-app permission status checks through
-  `Permission::authorization_state()`
-
 ## Important status warning
 
 `Permission::authorization_state()` reports what the current host process or
@@ -39,12 +65,11 @@ host app can determine about its own permission state.
 It does **not** authoritatively answer whether an arbitrary target `.app`
 bundle already has the requested permission.
 
-## Acknowledgements
+This means:
 
-The Swift side of this crate builds on top of the excellent
-[`PermissionFlow`](https://github.com/jaywcjlove/PermissionFlow) project and
-uses [`swift-rs`](https://github.com/Brendonovich/swift-rs) for the bridge into
-Rust.
+- if the target app is the current host app, the status is meaningful
+- if the target app is some other app bundle, treat the status as host-app
+  information only
 
 ## Runtime note
 
@@ -59,15 +84,9 @@ fn main() {
 }
 ```
 
-## Example
+## Acknowledgements
 
-```rust
-use permission_flow::{AppPath, Permission, PermissionFlowController, StartFlowOptions};
-
-let controller = PermissionFlowController::new()?;
-let app_path = AppPath::suggested_host_app()
-    .expect("expected a host app bundle in this launch context");
-
-controller.start_flow(StartFlowOptions::new(Permission::ACCESSIBILITY, app_path))?;
-# Ok::<(), Box<dyn std::error::Error>>(())
-```
+The Swift side of this crate builds on top of the excellent
+[`PermissionFlow`](https://github.com/jaywcjlove/PermissionFlow) project and
+uses [`swift-rs`](https://github.com/Brendonovich/swift-rs) for the bridge into
+Rust.

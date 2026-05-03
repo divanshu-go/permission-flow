@@ -1,5 +1,5 @@
 use iced::widget::{button, column, container, pick_list};
-use iced::{Alignment, Fill, Length, Size, Subscription, Task};
+use iced::{Alignment, Fill, Size, Subscription, Task};
 use permission_flow_iced::{
     AppPath, Permission, PermissionFlowButton, PermissionFlowButtonMessage, StartFlowOptions,
 };
@@ -79,14 +79,14 @@ impl ExampleHost {
                 Some(self.permission),
                 Message::PermissionSelected,
             )
-            .width(Length::Fill),
+            .width(Fill),
             button(button_state.label())
-                .width(Length::Fill)
+                .width(Fill)
                 .on_press(Message::ButtonPressed),
         ]
         .spacing(14)
         .align_x(Alignment::Center)
-        .width(Length::Fill)
+        .width(Fill)
         .max_width(240);
 
         container(content)

@@ -1,6 +1,17 @@
 # permission-flow-iced
 
+[![CI](https://github.com/veecore/permission-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/veecore/permission-flow/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/permission-flow-iced.svg)](https://crates.io/crates/permission-flow-iced)
+[![docs.rs](https://img.shields.io/docsrs/permission-flow-iced)](https://docs.rs/permission-flow-iced)
+
 Headless `iced` helpers for [`permission-flow`](../flow).
+
+![permission-flow demo](https://raw.githubusercontent.com/veecore/permission-flow/main/assets/demo-readme.gif)
+
+`permission-flow-iced` is for `iced` apps that want help with two things:
+
+- starting the macOS permission flow from a normal `iced` button
+- keeping host-app permission status refreshed without reinventing the wiring
 
 `PermissionFlowButton` eagerly owns its own `PermissionFlowController`, so each
 button can manage its own permission-flow lifecycle without relying on a global
@@ -9,6 +20,17 @@ controller.
 It also provides a built-in `subscription()` and `update(...)` pair for
 host-app status refreshes, so apps do not need to hand-roll timer or
 window-focus refresh logic themselves.
+
+## What it is
+
+This crate is a headless integration helper, not a custom `iced` widget.
+
+You still render your own UI, but the crate owns:
+
+- controller lifetime
+- `start_flow()` / `press()`
+- focus/timer refresh policy
+- current host-app authorization state
 
 ## Platform behavior
 
@@ -35,7 +57,55 @@ In practice:
 - If the suggested app bundle is some other app, treat the status as host-app
   information only, not as an authoritative target-app check.
 
-## Example
+## Quick start
+
+```rust
+use iced::{Task, Subscription};
+use permission_flow::{AppPath, Permission, StartFlowOptions};
+use permission_flow_iced::{PermissionFlowButton, PermissionFlowButtonMessage};
+
+struct App {
+    button: PermissionFlowButton,
+}
+
+enum Message {
+    PermissionFlow(PermissionFlowButtonMessage),
+    Pressed,
+}
+
+impl App {
+    fn new() -> Self {
+        let app_path = AppPath::suggested_host_app()
+            .expect("expected a host app bundle in this launch context");
+
+        Self {
+            button: PermissionFlowButton::with_options(
+                StartFlowOptions::new(Permission::ACCESSIBILITY, app_path),
+            )
+            .expect("button should initialize"),
+        }
+    }
+
+    fn update(&mut self, message: Message) -> Task<Message> {
+        match message {
+            Message::Pressed => {
+                let _ = self.button.press();
+            }
+            Message::PermissionFlow(inner) => {
+                let _ = self.button.update(inner);
+            }
+        }
+
+        Task::none()
+    }
+
+    fn subscription(&self) -> Subscription<Message> {
+        self.button.subscription().map(Message::PermissionFlow)
+    }
+}
+```
+
+## Example app
 
 Run the included example with:
 
