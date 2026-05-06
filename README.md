@@ -3,6 +3,7 @@
 [![CI](https://github.com/veecore/permission-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/veecore/permission-flow/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/permission-flow.svg)](https://crates.io/crates/permission-flow)
 [![docs.rs](https://img.shields.io/docsrs/permission-flow)](https://docs.rs/permission-flow)
+[![npm](https://img.shields.io/npm/v/%40veecore%2Ftauri-plugin-permission-flow-api)](https://www.npmjs.com/package/@veecore/tauri-plugin-permission-flow-api)
 
 `permission-flow` is a macOS-first workspace for guiding users through system
 permission onboarding from Rust apps.

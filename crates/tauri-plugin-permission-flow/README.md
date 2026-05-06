@@ -3,6 +3,7 @@
 [![CI](https://github.com/veecore/permission-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/veecore/permission-flow/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/tauri-plugin-permission-flow.svg)](https://crates.io/crates/tauri-plugin-permission-flow)
 [![docs.rs](https://img.shields.io/docsrs/tauri-plugin-permission-flow)](https://docs.rs/tauri-plugin-permission-flow)
+[![npm](https://img.shields.io/npm/v/%40veecore%2Ftauri-plugin-permission-flow-api)](https://www.npmjs.com/package/@veecore/tauri-plugin-permission-flow-api)
 
 Tauri bindings for the `permission-flow` macOS permission UI.
 

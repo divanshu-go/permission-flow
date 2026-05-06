@@ -3,6 +3,7 @@
 [![CI](https://github.com/veecore/permission-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/veecore/permission-flow/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/permission-flow-iced.svg)](https://crates.io/crates/permission-flow-iced)
 [![docs.rs](https://img.shields.io/docsrs/permission-flow-iced)](https://docs.rs/permission-flow-iced)
+[![npm](https://img.shields.io/npm/v/%40veecore%2Ftauri-plugin-permission-flow-api)](https://www.npmjs.com/package/@veecore/tauri-plugin-permission-flow-api)
 
 Headless `iced` helpers for [`permission-flow`](../flow).
 
