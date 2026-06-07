@@ -52,7 +52,7 @@ public struct PermissionFlowButton: View {
                 customLabel(buttonState)
             } else {
                 Label {
-                    Text(title ?? LocalizedStringResource(String.LocalizationValue(buttonState.titleKey), locale: locale, bundle: .module))
+                    Text(title ?? LocalizedStringResource(String.LocalizationValue(buttonState.titleKey), locale: locale, bundle: Bundle.module))
                 } icon: {
                     Image(systemName: buttonState.systemImage)
                         .foregroundColor(buttonState.isGranted ? .green : .primary)
