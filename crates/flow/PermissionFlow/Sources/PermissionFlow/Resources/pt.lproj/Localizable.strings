@@ -8,6 +8,7 @@
 "permission_flow.pane.full_disk_access" = "Acesso total ao disco";
 "permission_flow.pane.input_monitoring" = "Monitoramento de entrada";
 "permission_flow.pane.media_apple_music" = "Mídia e Apple Music";
+"permission_flow.pane.microphone" = "Microfone";
 "permission_flow.pane.screen_recording" = "Gravação de tela";
 "permission_flow.drag.description" = "Arraste este app para a lista de autorização dos Ajustes do Sistema.";
 "permission_flow.drag.label" = "Arrastar";

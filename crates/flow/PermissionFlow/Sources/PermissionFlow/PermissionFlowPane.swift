@@ -18,6 +18,8 @@ public enum PermissionFlowPane: String, CaseIterable, Codable, Sendable {
     case inputMonitoring
     /// Media & Apple Music permissions list.
     case mediaAppleMusic
+    /// Microphone permissions list.
+    case microphone
     /// Screen Recording permissions list.
     case screenRecording
 
@@ -31,7 +33,18 @@ public enum PermissionFlowPane: String, CaseIterable, Codable, Sendable {
         case .fullDiskAccess: .privacyAllFiles
         case .inputMonitoring: .privacyListenEvent
         case .mediaAppleMusic: .privacyMedia
+        case .microphone: .privacyMicrophone
         case .screenRecording: .privacyScreenCapture
+        }
+    }
+
+    /// Whether this pane supports the app-list drag authorization panel.
+    public var supportsFloatingAuthorizationPanel: Bool {
+        switch self {
+        case .microphone:
+            false
+        default:
+            true
         }
     }
 
@@ -83,6 +96,12 @@ public enum PermissionFlowPane: String, CaseIterable, Codable, Sendable {
             return PermissionFlowLocalizer.string(
                 "permission_flow.pane.media_apple_music",
                 defaultValue: "Media & Apple Music",
+                localeIdentifier: localeIdentifier
+            )
+        case .microphone:
+            return PermissionFlowLocalizer.string(
+                "permission_flow.pane.microphone",
+                defaultValue: "Microphone",
                 localeIdentifier: localeIdentifier
             )
         case .screenRecording:

@@ -68,7 +68,24 @@ final class FloatingDropPanel: NSPanel {
         hostingView.translatesAutoresizingMaskIntoConstraints = false
         hostingView.wantsLayer = true
         hostingView.layer?.backgroundColor = NSColor.clear.cgColor
-
+        // Prevent the hosting view from pushing its SwiftUI layout size back
+        // onto the enclosing NSWindow. `NSHostingView.sizingOptions` defaults
+        // to `[.intrinsicContentSize]` on macOS 13.3+, which makes the host
+        // re-advertise the SwiftUI root view's intrinsic size to the window
+        // on every layout pass. For the panel content (ultraThinMaterial
+        // background + `.fixedSize(vertical: true)` + a markdown-wrapped
+        // header `AttributedString`), that intrinsic value diverges from the
+        // `sizingView.fittingSize` that `measuredPanelHeight` uses — so the
+        // window auto-grows well past the content-size we set, and every
+        // subsequent `setFrame(...)` from `snap(to:)` is reverted on the
+        // next layout tick, leaving the panel stuck off-screen.
+        //
+        // Opting out of `.intrinsicContentSize` makes the existing
+        // `measuredPanelHeight` → `setContentSize` / `snap(to:)` pipeline the
+        // single source of truth for panel geometry.
+        if #available(macOS 13.3, *) {
+            hostingView.sizingOptions = []
+        }
         contentView = clippingView
         clippingView.addSubview(hostingView)
         NSLayoutConstraint.activate([
@@ -118,11 +135,6 @@ final class FloatingDropPanel: NSPanel {
             panelController?.keepSettingsVisible()
         }
         super.sendEvent(event)
-    }
-
-    override func setContentSize(_ size: NSSize) {
-        let width = max(1, size.width)
-        super.setContentSize(NSSize(width: width, height: measuredPanelHeight(for: width)))
     }
 
     /// Shows the panel at its current frame without any positioning changes.

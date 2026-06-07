@@ -30,6 +30,127 @@ public enum DisplaySettingsAnchor: String, CaseIterable, Sendable {
     case sidecarSection
 }
 
+/// Anchor points for navigating to specific sections within the Login Items settings pane.
+/// These anchors allow direct navigation to login items and extension items.
+@available(macOS 13.0, *)
+public enum LoginItemsSettingsAnchor: String, CaseIterable, Sendable {
+    /// Opens the extension items section.
+    case extensionItems = "ExtensionItems"
+}
+
+/// Extension point identifiers that System Settings can open inside Login Items & Extensions.
+@available(macOS 13.0, *)
+public enum LoginItemsExtensionPointIdentifier: String, CaseIterable, Sendable {
+    /// Opens the Share Menu extension settings.
+    case shareServices = "com.apple.share-services"
+    /// Opens the Actions extension settings.
+    case actions = "com.apple.ui-services"
+    /// Opens the Photo Editing extension settings.
+    case photoEditing = "com.apple.photo-editing"
+    /// Opens the Spotlight importer extension settings.
+    case spotlightImporter = "com.apple.spotlight.import"
+    /// Opens the Quick Look previews extension settings.
+    case quickLookPreview = "com.apple.quicklook.preview"
+    /// Opens the File Provider extension settings.
+    case fileProvider = "com.apple.fileprovider-nonui"
+    /// Opens the Finder Quick Actions extension settings.
+    case finderQuickActions = "com.apple.finder-quick-actions"
+    /// Opens the Touch Bar Quick Actions extension settings.
+    case touchBarQuickActions = "com.apple.touchbar-quick-actions"
+    /// Opens the legacy Dock tile plugin settings.
+    case legacyDockTiles = "com.apple.extensionkit.legacy-plugins.docktiles"
+    /// Opens the legacy Spotlight importer plugin settings.
+    case legacySpotlightImporter = "com.apple.extensionkit.legacy-plugins.spotlight-importer"
+}
+
+/// Anchor points for navigating to specific sections within the Wi-Fi settings pane.
+/// These anchors allow direct navigation to Wi-Fi overview, join, details, and advanced sections.
+@available(macOS 13.0, *)
+public enum WiFiSettingsAnchor: String, CaseIterable, Sendable {
+    /// Opens advanced Wi-Fi settings.
+    case advanced = "Advanced"
+    /// Opens Wi-Fi network details.
+    case generalDetails = "General_Details"
+    /// Opens the join network section.
+    case generalJoin = "General_Join"
+    /// Opens the main Wi-Fi section.
+    case generalMain = "General_Main"
+}
+
+/// Anchor points for navigating to specific sections within the VPN settings pane.
+/// These anchors allow direct navigation to VPN and VPN on Demand settings.
+@available(macOS 13.0, *)
+public enum VPNSettingsAnchor: String, CaseIterable, Sendable {
+    /// Opens VPN settings.
+    case vpn = "VPN"
+    /// Opens VPN on Demand settings.
+    case vpnOnDemand = "VPN on Demand"
+}
+
+/// Common anchor points for navigating to major sections within the Accessibility settings pane.
+/// Use `SystemSettingsDestination.accessibility(anchor: String)` for less common control-level anchors.
+@available(macOS 13.0, *)
+public enum AccessibilitySettingsAnchor: String, CaseIterable, Sendable {
+    /// Opens the Display accessibility section.
+    case display = "display"
+    /// Opens the Text accessibility section.
+    case text = "text"
+    /// Opens pointer appearance settings.
+    case pointer = "pointer"
+    /// Opens mouse and trackpad accessibility settings.
+    case mouseAndTrackpad = "mouseAndTrackpad"
+    /// Opens headphone accessibility settings.
+    case headphones = "headphones"
+    /// Opens VoiceOver settings.
+    case voiceOver = "AX_feature.voiceOver"
+    /// Opens Zoom accessibility settings.
+    case zoom = "AX_feature.zoom"
+    /// Opens display filter settings.
+    case displayFilters = "AX_feature.displayFilters"
+    /// Opens background sounds settings.
+    case backgroundSounds = "AX_feature.backgroundSounds"
+    /// Opens Spoken Content settings.
+    case spokenContent = "AX_FEATURE_SPOKENCONTENT"
+    /// Opens Captions settings.
+    case captions = "AX_FEATURE_CAPTIONS"
+    /// Opens Audio accessibility settings.
+    case audio = "AX_FEATURE_AUDIO"
+    /// Opens Audio Descriptions settings.
+    case descriptions = "AX_FEATURE_DESCRIPTIONS"
+    /// Opens Keyboard accessibility settings.
+    case keyboard = "AX_FEATURE_KEYBOARD"
+    /// Opens Full Keyboard Access settings.
+    case fullKeyboardAccess = "AX_feature.fullKeyboardAccess"
+    /// Opens Sticky Keys settings.
+    case stickyKeys = "AX_feature.stickyKeys"
+    /// Opens Slow Keys settings.
+    case slowKeys = "AX_feature.slowKeys"
+    /// Opens Accessibility Keyboard settings.
+    case virtualKeyboard = "AX_feature.virtualKeyboard"
+    /// Opens Voice Control settings.
+    case voiceControl = "AX_feature.voiceControl"
+    /// Opens Switch Control settings.
+    case switchControl = "AX_feature.switchControl"
+    /// Opens Alternate Mouse Buttons settings.
+    case alternateMouseButtons = "AX_feature.alternateMouseButtons"
+    /// Opens Head Pointer settings.
+    case headMouse = "AX_feature.headMouse"
+    /// Opens Mouse Keys settings.
+    case mouseKeys = "AX_feature.mouseKeys"
+    /// Opens Hover Text settings.
+    case hoverText = "AX_feature.hoverText"
+    /// Opens Hover Typing settings.
+    case hoverTyping = "AX_feature.hoverTyping"
+    /// Opens Live Speech settings.
+    case liveSpeech = "AX_feature.liveSpeech"
+    /// Opens Personal Voice settings.
+    case personalVoice = "AX_FEATURE_PERSONALVOICE"
+    /// Opens Siri accessibility settings.
+    case siri = "AX_FEATURE_SIRI"
+    /// Opens Accessibility Shortcut settings.
+    case shortcut = "AX_FEATURE_SHORTCUT"
+}
+
 /// Anchor points for navigating to specific sections within the Privacy & Security settings pane.
 /// These anchors allow direct navigation to subsections of the macOS System Settings Privacy & Security panel.
 @available(macOS 13.0, *)
@@ -185,6 +306,68 @@ public extension SystemSettingsDestination {
 
     /// Login items settings.
     static let loginItems = Self(paneIdentifier: "com.apple.LoginItems-Settings.extension")
+
+    /// Login items settings subsection.
+    static func loginItems(anchor: LoginItemsSettingsAnchor) -> Self {
+        Self(
+            paneIdentifier: "com.apple.LoginItems-Settings.extension",
+            anchor: anchor.rawValue
+        )
+    }
+
+    /// Login Items & Extensions settings for a specific extension point identifier.
+    static func loginItems(extensionPointIdentifier: String) -> Self {
+        Self(
+            paneIdentifier: "com.apple.ExtensionsPreferences",
+            anchor: "extensionPointIdentifier=\(extensionPointIdentifier)"
+        )
+    }
+
+    /// Login Items & Extensions settings for a typed extension point identifier.
+    static func loginItems(extensionPointIdentifier: LoginItemsExtensionPointIdentifier) -> Self {
+        loginItems(extensionPointIdentifier: extensionPointIdentifier.rawValue)
+    }
+
+    /// Wi-Fi settings.
+    static let wifi = Self(paneIdentifier: "com.apple.wifi-settings-extension")
+
+    /// Wi-Fi settings subsection.
+    static func wifi(anchor: WiFiSettingsAnchor) -> Self {
+        Self(
+            paneIdentifier: "com.apple.wifi-settings-extension",
+            anchor: anchor.rawValue
+        )
+    }
+
+    /// VPN settings.
+    static let vpn = Self(paneIdentifier: "com.apple.NetworkExtensionSettingsUI.NESettingsUIExtension*vpn")
+
+    /// VPN settings subsection.
+    static func vpn(anchor: VPNSettingsAnchor) -> Self {
+        Self(
+            paneIdentifier: "com.apple.NetworkExtensionSettingsUI.NESettingsUIExtension*vpn",
+            anchor: anchor.rawValue
+        )
+    }
+
+    /// Accessibility settings.
+    static let accessibility = Self(paneIdentifier: "com.apple.Accessibility-Settings.extension")
+
+    /// Accessibility settings subsection.
+    static func accessibility(anchor: AccessibilitySettingsAnchor) -> Self {
+        Self(
+            paneIdentifier: "com.apple.Accessibility-Settings.extension",
+            anchor: anchor.rawValue
+        )
+    }
+
+    /// Accessibility settings subsection from a raw anchor string.
+    static func accessibility(anchor: String) -> Self {
+        Self(
+            paneIdentifier: "com.apple.Accessibility-Settings.extension",
+            anchor: anchor
+        )
+    }
 }
 #elseif os(iOS)
 @available(iOS 16.0, *)

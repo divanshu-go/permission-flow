@@ -11,8 +11,6 @@ struct PermissionFlowPanelView: View {
             if let primaryApp = controller.preferredAppURL {
                 AppDragItemView(url: primaryApp) { isDragging in
                     controller.setPanelDragging(isDragging)
-                } onDropAccepted: { droppedURL in
-                    controller.completeSuccessfulDrop(of: droppedURL)
                 }
                 .frame(maxWidth: .infinity)
             }

@@ -6,19 +6,16 @@ import SwiftUI
 struct AppDragItemView: NSViewRepresentable {
     let url: URL
     let onDragStateChange: (Bool) -> Void
-    let onDropAccepted: (URL) -> Void
 
     func makeNSView(context: Context) -> AppDragSourceView {
         let view = AppDragSourceView(url: url)
         view.onDragStateChange = onDragStateChange
-        view.onDropAccepted = onDropAccepted
         return view
     }
 
     func updateNSView(_ nsView: AppDragSourceView, context: Context) {
         nsView.update(url: url)
         nsView.onDragStateChange = onDragStateChange
-        nsView.onDropAccepted = onDropAccepted
     }
 }
 
@@ -31,7 +28,6 @@ final class AppDragSourceView: NSView, NSDraggingSource {
 
     /// Tells the panel when it should temporarily become mouse-transparent.
     var onDragStateChange: ((Bool) -> Void)?
-    var onDropAccepted: ((URL) -> Void)?
 
     init(url: URL) {
         self.url = url
@@ -104,9 +100,6 @@ final class AppDragSourceView: NSView, NSDraggingSource {
 
     func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
         onDragStateChange?(false)
-        if operation.contains(.copy) {
-            onDropAccepted?(url)
-        }
         mouseDownPoint = nil
         hasBegunDragging = false
     }
@@ -145,6 +138,7 @@ private final class AppBundlePasteboardWriter: NSObject, NSPasteboardWriting {
         [
             .fileURL,
             .URL,
+            NSPasteboard.PasteboardType("NSFilenamesPboardType"),
             NSPasteboard.PasteboardType("com.apple.pasteboard.promised-file-url"),
             .string
         ]
@@ -154,6 +148,8 @@ private final class AppBundlePasteboardWriter: NSObject, NSPasteboardWriting {
         switch type {
         case .fileURL, .URL, NSPasteboard.PasteboardType("com.apple.pasteboard.promised-file-url"):
             return url.absoluteString
+        case NSPasteboard.PasteboardType("NSFilenamesPboardType"):
+            return [url.path]
         case .string:
             return url.path
         default:

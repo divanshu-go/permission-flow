@@ -4,8 +4,8 @@ import Foundation
 public enum SystemSettings {
 #if os(macOS)
     /// Opens a System Settings page from a pane identifier and optional anchor.
-    @discardableResult
     @MainActor
+    @discardableResult
     public static func open(
         paneIdentifier: String,
         anchor: String? = nil
@@ -14,15 +14,15 @@ public enum SystemSettings {
     }
 
     /// Opens a System Settings page from a prebuilt deeplink destination.
-    @discardableResult
     @MainActor
+    @discardableResult
     public static func open(_ destination: SystemSettingsDestination) -> Bool {
         SettingsNavigator().openSettings(at: destination.url)
     }
 
     /// Opens System Settings from a fully built deeplink URL.
-    @discardableResult
     @MainActor
+    @discardableResult
     public static func open(url: URL) -> Bool {
         SettingsNavigator().openSettings(at: url)
     }
@@ -34,30 +34,30 @@ public enum SystemSettings {
     }
 #elseif os(iOS)
     /// Opens the current app's Settings page on iOS.
-    @discardableResult
     @MainActor
+    @discardableResult
     public static func openAppSettings() -> Bool {
         SettingsNavigator().openSettings(at: SystemSettingsDestination.appSettings.url)
     }
 
     /// Opens the current app's notification settings page on iOS.
-    @discardableResult
     @MainActor
+    @discardableResult
     public static func openNotificationSettings() -> Bool {
         SettingsNavigator().openSettings(at: SystemSettingsDestination.notificationSettings.url)
     }
 
     /// Opens a Settings page from a prebuilt destination. iOS only exposes the
     /// destinations explicitly modelled in `SystemSettingsDestination`.
-    @discardableResult
     @MainActor
+    @discardableResult
     public static func open(_ destination: SystemSettingsDestination) -> Bool {
         SettingsNavigator().openSettings(at: destination.url)
     }
 
     /// Opens Settings from a fully built URL. The URL must be supported by iOS.
-    @discardableResult
     @MainActor
+    @discardableResult
     public static func open(url: URL) -> Bool {
         SettingsNavigator().openSettings(at: url)
     }

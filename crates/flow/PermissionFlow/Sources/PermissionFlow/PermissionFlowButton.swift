@@ -10,6 +10,7 @@ public struct PermissionFlowButton: View {
     private let pane: PermissionFlowPane
     private let suggestedAppURLs: [URL]
     private let title: LocalizedStringResource?
+    private let customLabel: ((PermissionFlowButtonState) -> AnyView)?
 
     public init(
         title: LocalizedStringResource? = nil,
@@ -21,6 +22,23 @@ public struct PermissionFlowButton: View {
         self.pane = pane
         self.suggestedAppURLs = suggestedAppURLs
         self.title = title
+        self.customLabel = nil
+        
+        // Initialize with checking state, will be updated on appear
+        _buttonState = State(initialValue: PermissionFlowButtonState.make(from: .checking))
+    }
+
+    public init<Label: View>(
+        pane: PermissionFlowPane,
+        suggestedAppURLs: [URL] = [],
+        configuration: PermissionFlowConfiguration = .init(),
+        @ViewBuilder label: @escaping (PermissionFlowButtonState) -> Label
+    ) {
+        _controller = StateObject(wrappedValue: PermissionFlowController(configuration: configuration))
+        self.pane = pane
+        self.suggestedAppURLs = suggestedAppURLs
+        self.title = nil
+        self.customLabel = { AnyView(label($0)) }
         
         // Initialize with checking state, will be updated on appear
         _buttonState = State(initialValue: PermissionFlowButtonState.make(from: .checking))
@@ -28,28 +46,17 @@ public struct PermissionFlowButton: View {
 
     public var body: some View {
         Button {
-            controller.setLocaleIdentifier(locale.identifier)
-            controller.authorize(
-                pane: pane,
-                suggestedAppURLs: suggestedAppURLs,
-                sourceFrameInScreen: clickSourceFrameInScreen()
-            )
+            authorize()
         } label: {
-            Label {
-                if let title {
-                    Text(title)
-                } else {
-                    Text(
-                        String(
-                            localized: String.LocalizationValue(buttonState.titleKey),
-                            bundle: .module,
-                            locale: locale
-                        )
-                    )
+            if let customLabel {
+                customLabel(buttonState)
+            } else {
+                Label {
+                    Text(title ?? LocalizedStringResource(String.LocalizationValue(buttonState.titleKey), locale: locale, bundle: .module))
+                } icon: {
+                    Image(systemName: buttonState.systemImage)
+                        .foregroundColor(buttonState.isGranted ? .green : .primary)
                 }
-            } icon: {
-                Image(systemName: buttonState.systemImage)
-                    .foregroundColor(buttonState.isGranted ? .green : .primary)
             }
         }
         .onAppear(perform: refreshAuthorizationStatus)
@@ -63,6 +70,31 @@ public struct PermissionFlowButton: View {
     private func clickSourceFrameInScreen() -> CGRect {
         let mouse = NSEvent.mouseLocation
         return CGRect(x: mouse.x - 16, y: mouse.y - 16, width: 32, height: 32)
+    }
+
+    private func authorize() {
+        controller.setLocaleIdentifier(locale.identifier)
+
+        if pane == .microphone {
+            requestMicrophoneAuthorization()
+            return
+        }
+
+        controller.authorize(
+            pane: pane,
+            suggestedAppURLs: suggestedAppURLs,
+            sourceFrameInScreen: clickSourceFrameInScreen()
+        )
+    }
+
+    private func requestMicrophoneAuthorization() {
+        buttonState = PermissionFlowButtonState.make(from: .checking)
+        MicrophonePermissionStatusProvider().requestAuthorization { authorizationState in
+            Task { @MainActor in
+                buttonState = PermissionFlowButtonState.make(from: authorizationState)
+                controller.authorize(pane: .microphone)
+            }
+        }
     }
 
     private func refreshAuthorizationStatus() {

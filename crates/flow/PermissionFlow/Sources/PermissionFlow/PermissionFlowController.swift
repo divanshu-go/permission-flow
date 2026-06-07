@@ -74,6 +74,8 @@ public final class PermissionFlowController: ObservableObject {
         mergeDroppedApps(with: suggestedAppURLs)
         SystemSettings.open(url: pane.settingsURL)
 
+        guard pane.supportsFloatingAuthorizationPanel else { return }
+
         Self.activeController = self
         showPanel()
         tracker.startTracking(promptIfNeeded: configuration.promptForAccessibilityTrust)
@@ -134,12 +136,6 @@ public final class PermissionFlowController: ObservableObject {
         guard droppedApps.contains(normalizedURL) == false else { return }
         droppedApps.append(normalizedURL)
         onDrop?(normalizedURL)
-    }
-
-    /// Records a successful drag into System Settings and dismisses the panel.
-    func completeSuccessfulDrop(of url: URL) {
-        registerDroppedApp(url)
-        closePanel()
     }
 
     /// The panel always renders a single primary app card. If the host has not

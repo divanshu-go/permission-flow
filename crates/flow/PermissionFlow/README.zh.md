@@ -1,6 +1,7 @@
 <div align="left">
   <sup>使用<a href="https://wangchujiang.com/#/app" target="_blank">我的应用</a>，也是对我的<a href="https://wangchujiang.com/#/sponsor" target="_blank">支持</a>：</sup>
   <br>
+  <a target="_blank" href="https://jaywcjlove.github.io/maslink/?id=6766860898" title="Zipora: Zip/RAR/7Z 解压工具"><img alt="Zipora: Zip/RAR/7Z 解压工具" height="52" src="https://wangchujiang.com/appicon/zipora.png"></a>
   <a target="_blank" href="https://jaywcjlove.github.io/maslink/?id=6758053530" title="Scap: Screenshot & Markup Edit for macOS"><img alt="Scap: Screenshot & Markup Edit" height="52" src="https://wangchujiang.com/appicon/scap.png"></a>
   <a target="_blank" href="https://jaywcjlove.github.io/maslink/?id=6757317079" title="Screen Test for macOS"><img alt="Screen Test" height="52" src="https://wangchujiang.com/appicon/screen-test.png"></a>
   <a target="_blank" href="https://jaywcjlove.github.io/maslink/?id=6755948110" title="Deskmark for macOS"><img alt="Deskmark" height="52" src="https://wangchujiang.com/appicon/deskmark.png"></a>
@@ -140,12 +141,13 @@ package 地址和安装入口与之前保持一致。现在变化的是 product 
 
 ## 支持的权限页面
 
-`PermissionFlow` 只覆盖支持悬浮框 + 拖拽授权的这 8 个权限页：
+`PermissionFlow` 覆盖以下权限页。大多数权限使用悬浮框 + 拖拽授权流程；`.microphone` 使用系统麦克风授权弹窗。
 
 - `.accessibility`：打开 `隐私与安全性 > 辅助功能`。✅ **支持状态检测**
 - `.fullDiskAccess`：打开 `隐私与安全性 > 完全磁盘访问权限`。✅ **支持状态检测**
 - `.inputMonitoring`：打开 `隐私与安全性 > 输入监控`。✅ **支持状态检测**
 - `.screenRecording`：打开 `隐私与安全性 > 屏幕录制`。✅ **支持状态检测**
+- `.microphone`：请求麦克风授权，并在需要时打开 `隐私与安全性 > 麦克风`。✅ **支持状态检测**
 - `.bluetooth`：打开 `隐私与安全性 > 蓝牙`。✅ **支持状态检测**
 - `.mediaAppleMusic`：打开 `隐私与安全性 > 媒体与 Apple Music`。✅ **支持状态检测**
 - `.appManagement`：打开 `隐私与安全性 > App 管理`。⚠️ 状态检测不可用
@@ -155,12 +157,64 @@ package 地址和安装入口与之前保持一致。现在变化的是 product 
 
 - ✅ **已授权**：绿色勾选图标，显示"已授权"文字
 - ➡️ **未授权**：蓝色箭头图标，显示"授权"文字
-- `PermissionFlow` 内置支持：`.accessibility`、`.fullDiskAccess`
+- `PermissionFlow` 内置支持：`.accessibility`、`.fullDiskAccess`、`.microphone`
 - 可通过可选状态扩展启用：`.bluetooth`、`.inputMonitoring`、`.mediaAppleMusic`、`.screenRecording`
 - 🔄 **检查中**：时钟图标，显示"检查中..."文字
 - ❓ **未知**：蓝色箭头图标，显示"打开"文字（不支持检测时）
 
 其它所有 `System Settings` 页面或隐私子页面，请使用 `SystemSettingsKit`。
+
+## Info.plist 隐私描述
+
+会触发 Apple 系统隐私授权弹窗的权限，宿主 App 必须在 `Info.plist` 中配置对应的用途描述。如果宿主 macOS App 开启了 App Sandbox，还需要在 **Signing & Capabilities > App Sandbox** 中启用对应 entitlement。
+
+### Microphone
+
+当你请求 `.microphone` 或调用 Apple 的麦克风授权 API 时配置：
+
+```xml
+<key>NSMicrophoneUsageDescription</key>
+<string>此应用需要使用麦克风进行音频录制。</string>
+```
+
+对于沙盒化 macOS App，打开 `Audio Input`，或添加：
+
+```xml
+<key>com.apple.security.device.audio-input</key>
+<true/>
+```
+
+### Camera
+
+当你请求摄像头权限时配置：
+
+```xml
+<key>NSCameraUsageDescription</key>
+<string>此应用需要使用摄像头进行视频采集。</string>
+```
+
+对于沙盒化 macOS App，打开 `Camera`，或添加：
+
+```xml
+<key>com.apple.security.device.camera</key>
+<true/>
+```
+
+### Apple Events
+
+当你的 App 发送 Apple Events，例如自动化或控制另一个 App 时配置：
+
+```xml
+<key>NSAppleEventsUsageDescription</key>
+<string>此应用需要控制其他 App 以引导完成授权。</string>
+```
+
+对于沙盒化 macOS App，打开 `Apple Events`，或添加：
+
+```xml
+<key>com.apple.security.automation.apple-events</key>
+<true/>
+```
 
 ## 快速开始
 
@@ -326,6 +380,15 @@ PermissionFlowButton(
     suggestedAppURLs: [Bundle.main.bundleURL],
     configuration: .init()
 )
+
+PermissionFlowButton(
+    pane: .screenRecording,
+    suggestedAppURLs: [Bundle.main.bundleURL],
+    configuration: .init()
+) { buttonState in
+    Label("打开屏幕录制权限", systemImage: buttonState.systemImage)
+        .foregroundStyle(buttonState.isGranted ? .green : .primary)
+}
 ```
 
 ### `PermissionFlow.makeController`
@@ -416,8 +479,16 @@ public struct SystemSettingsDestination {
 - `.wallpaper`
 - `.displays`
 - `.displays(anchor:)`
+- `.accessibility`
+- `.accessibility(anchor:)`
 - `.bluetooth`
 - `.loginItems`
+- `.loginItems(anchor:)`
+- `.loginItems(extensionPointIdentifier:)`
+- `.wifi`
+- `.wifi(anchor:)`
+- `.vpn`
+- `.vpn(anchor:)`
 - `.privacy(anchor:)`
 
 ### 隐私权限锚点
@@ -431,7 +502,7 @@ SystemSettings.open(.privacy(anchor: .privacyAccessibility))
 SystemSettings.open(.privacy(anchor: .security))
 ```
 
-原有的 `PermissionFlowPane` 仍然继续用于当前包内“带悬浮框授权流程”的那组隐私权限页面。
+原有的 `PermissionFlowPane` 仍然继续用于当前包内的权限授权流程页面。
 
 - `.appManagement`：打开 `隐私与安全性 > App Management`。
 - `.accessibility`：打开 `隐私与安全性 > Accessibility`。
@@ -440,6 +511,7 @@ SystemSettings.open(.privacy(anchor: .security))
 - `.fullDiskAccess`：打开 `隐私与安全性 > Full Disk Access`。
 - `.inputMonitoring`：打开 `隐私与安全性 > Input Monitoring`。
 - `.mediaAppleMusic`：打开 `隐私与安全性 > Media & Apple Music`。✅ **支持状态检测**
+- `.microphone`：请求麦克风授权，并在需要时打开 `隐私与安全性 > Microphone`。✅ **支持状态检测**
 - `.screenRecording`：打开 `隐私与安全性 > Screen Recording`。
 
 当前内置的隐私与安全性强类型锚点，以及它们实际跳转到的位置：
@@ -502,6 +574,108 @@ SystemSettings.open(.displays(anchor: .nightShiftSection))
 - `.profileSection`：跳转到 `显示器 > 色彩配置文件`
 - `.resolutionSection`：跳转到 `显示器 > 分辨率`
 - `.sidecarSection`：跳转到 `显示器 > Sidecar`
+
+### 登录项子页面锚点
+
+“登录项”页面也支持强类型子页面锚点：
+
+```swift
+SystemSettings.open(.loginItems)
+SystemSettings.open(.loginItems(anchor: .extensionItems))
+SystemSettings.open(.loginItems(extensionPointIdentifier: .quickLookPreview))
+SystemSettings.open(.loginItems(extensionPointIdentifier: .shareServices))
+```
+
+当前内置的登录项锚点和 extension point helper，以及它们实际跳转到的位置：
+
+- `.extensionItems`：跳转到 `登录项 > Extension Items`
+- `.shareServices`：`extensionPointIdentifier=com.apple.share-services`
+- `.actions`：`extensionPointIdentifier=com.apple.ui-services`
+- `.photoEditing`：`extensionPointIdentifier=com.apple.photo-editing`
+- `.spotlightImporter`：`extensionPointIdentifier=com.apple.spotlight.import`
+- `.quickLookPreview`：跳转到 `登录项与扩展 > 扩展 > Quick Look`，使用 `extensionPointIdentifier=com.apple.quicklook.preview`
+- `.fileProvider`：`extensionPointIdentifier=com.apple.fileprovider-nonui`
+- `.finderQuickActions`：`extensionPointIdentifier=com.apple.finder-quick-actions`
+- `.touchBarQuickActions`：`extensionPointIdentifier=com.apple.touchbar-quick-actions`
+- `.legacyDockTiles`：`extensionPointIdentifier=com.apple.extensionkit.legacy-plugins.docktiles`
+- `.legacySpotlightImporter`：`extensionPointIdentifier=com.apple.extensionkit.legacy-plugins.spotlight-importer`
+
+### Wi-Fi 子页面锚点
+
+“Wi-Fi”页面也支持强类型子页面锚点：
+
+```swift
+SystemSettings.open(.wifi)
+SystemSettings.open(.wifi(anchor: .generalMain))
+SystemSettings.open(.wifi(anchor: .generalJoin))
+SystemSettings.open(.wifi(anchor: .generalDetails))
+SystemSettings.open(.wifi(anchor: .advanced))
+```
+
+当前内置的 Wi-Fi 锚点，以及它们实际跳转到的位置：
+
+- `.advanced`：跳转到 `Wi-Fi > 高级`
+- `.generalDetails`：跳转到 `Wi-Fi > 详情`
+- `.generalJoin`：跳转到 `Wi-Fi > 加入网络`
+- `.generalMain`：跳转到 `Wi-Fi > 主页面`
+
+### VPN 子页面锚点
+
+“VPN”页面也支持强类型子页面锚点：
+
+```swift
+SystemSettings.open(.vpn)
+SystemSettings.open(.vpn(anchor: .vpn))
+SystemSettings.open(.vpn(anchor: .vpnOnDemand))
+```
+
+当前内置的 VPN 锚点，以及它们实际跳转到的位置：
+
+- `.vpn`：跳转到 `VPN > VPN`
+- `.vpnOnDemand`：跳转到 `VPN > VPN on Demand`
+
+### 辅助功能子页面锚点
+
+“辅助功能”页面提供常用子页面的强类型封装，也保留 raw string 形式用于更细的控件级 anchor：
+
+```swift
+SystemSettings.open(.accessibility)
+SystemSettings.open(.accessibility(anchor: .display))
+SystemSettings.open(.accessibility(anchor: .voiceOver))
+SystemSettings.open(.accessibility(anchor: "AX_ZOOM_MAX_FACTOR"))
+```
+
+当前内置的常用辅助功能锚点：
+
+- `.display`：跳转到 `辅助功能 > 显示`
+- `.text`：跳转到 `辅助功能 > 文本`
+- `.pointer`：跳转到 `辅助功能 > 指针`
+- `.mouseAndTrackpad`：跳转到 `辅助功能 > 鼠标与触控板`
+- `.headphones`：跳转到 `辅助功能 > 耳机`
+- `.voiceOver`：跳转到 `辅助功能 > VoiceOver`
+- `.zoom`：跳转到 `辅助功能 > 缩放`
+- `.displayFilters`：跳转到 `辅助功能 > 显示过滤器`
+- `.backgroundSounds`：跳转到 `辅助功能 > 背景声`
+- `.spokenContent`：跳转到 `辅助功能 > 朗读内容`
+- `.captions`：跳转到 `辅助功能 > 字幕`
+- `.audio`：跳转到 `辅助功能 > 音频`
+- `.descriptions`：跳转到 `辅助功能 > 音频描述`
+- `.keyboard`：跳转到 `辅助功能 > 键盘`
+- `.fullKeyboardAccess`：跳转到 `辅助功能 > 全键盘访问`
+- `.stickyKeys`：跳转到 `辅助功能 > 粘滞键`
+- `.slowKeys`：跳转到 `辅助功能 > 慢速键`
+- `.virtualKeyboard`：跳转到 `辅助功能 > 辅助功能键盘`
+- `.voiceControl`：跳转到 `辅助功能 > 语音控制`
+- `.switchControl`：跳转到 `辅助功能 > 切换控制`
+- `.alternateMouseButtons`：跳转到 `辅助功能 > 替代鼠标按钮`
+- `.headMouse`：跳转到 `辅助功能 > 头控指针`
+- `.mouseKeys`：跳转到 `辅助功能 > 鼠标键`
+- `.hoverText`：跳转到 `辅助功能 > 悬停文本`
+- `.hoverTyping`：跳转到 `辅助功能 > 悬停输入`
+- `.liveSpeech`：跳转到 `辅助功能 > 实时语音`
+- `.personalVoice`：跳转到 `辅助功能 > 个人声音`
+- `.siri`：跳转到 `辅助功能 > Siri`
+- `.shortcut`：跳转到 `辅助功能 > 辅助功能快捷键`
 
 ## 配置项
 

@@ -20,6 +20,89 @@ func typedDisplaysAnchorBuildsDeepLink() {
 }
 
 @Test
+func typedLoginItemsAnchorBuildsDeepLink() {
+    #expect(
+        SystemSettingsDestination.loginItems(anchor: .extensionItems).url.absoluteString ==
+        "x-apple.systempreferences:com.apple.LoginItems-Settings.extension?ExtensionItems"
+    )
+    #expect(
+        SystemSettingsDestination.loginItems(extensionPointIdentifier: .quickLookPreview).url.absoluteString ==
+        "x-apple.systempreferences:com.apple.ExtensionsPreferences?extensionPointIdentifier=com.apple.quicklook.preview"
+    )
+    #expect(
+        SystemSettingsDestination.loginItems(extensionPointIdentifier: "com.apple.quicklook.preview").url.absoluteString ==
+        "x-apple.systempreferences:com.apple.ExtensionsPreferences?extensionPointIdentifier=com.apple.quicklook.preview"
+    )
+
+    for extensionPointIdentifier in LoginItemsExtensionPointIdentifier.allCases {
+        #expect(
+            SystemSettingsDestination.loginItems(extensionPointIdentifier: extensionPointIdentifier).url.absoluteString ==
+            "x-apple.systempreferences:com.apple.ExtensionsPreferences?extensionPointIdentifier=\(extensionPointIdentifier.rawValue)"
+        )
+    }
+}
+
+@Test
+func typedWiFiAnchorBuildsDeepLink() {
+    #expect(
+        SystemSettingsDestination.wifi.url.absoluteString ==
+        "x-apple.systempreferences:com.apple.wifi-settings-extension"
+    )
+    #expect(
+        SystemSettingsDestination.wifi(anchor: .advanced).url.absoluteString ==
+        "x-apple.systempreferences:com.apple.wifi-settings-extension?Advanced"
+    )
+    #expect(
+        SystemSettingsDestination.wifi(anchor: .generalDetails).url.absoluteString ==
+        "x-apple.systempreferences:com.apple.wifi-settings-extension?General_Details"
+    )
+    #expect(
+        SystemSettingsDestination.wifi(anchor: .generalJoin).url.absoluteString ==
+        "x-apple.systempreferences:com.apple.wifi-settings-extension?General_Join"
+    )
+    #expect(
+        SystemSettingsDestination.wifi(anchor: .generalMain).url.absoluteString ==
+        "x-apple.systempreferences:com.apple.wifi-settings-extension?General_Main"
+    )
+}
+
+@Test
+func typedVPNAnchorBuildsDeepLink() {
+    #expect(
+        SystemSettingsDestination.vpn.url.absoluteString ==
+        "x-apple.systempreferences:com.apple.NetworkExtensionSettingsUI.NESettingsUIExtension*vpn"
+    )
+    #expect(
+        SystemSettingsDestination.vpn(anchor: .vpn).url.absoluteString ==
+        "x-apple.systempreferences:com.apple.NetworkExtensionSettingsUI.NESettingsUIExtension*vpn?VPN"
+    )
+    #expect(
+        SystemSettingsDestination.vpn(anchor: .vpnOnDemand).url.absoluteString ==
+        "x-apple.systempreferences:com.apple.NetworkExtensionSettingsUI.NESettingsUIExtension*vpn?VPN%20on%20Demand"
+    )
+}
+
+@Test
+func accessibilityAnchorBuildsDeepLink() {
+    #expect(
+        SystemSettingsDestination.accessibility.url.absoluteString ==
+        "x-apple.systempreferences:com.apple.Accessibility-Settings.extension"
+    )
+    #expect(
+        SystemSettingsDestination.accessibility(anchor: .voiceOver).url.absoluteString ==
+        "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?AX_feature.voiceOver"
+    )
+    #expect(
+        SystemSettingsDestination.accessibility(anchor: .spokenContent).url.absoluteString ==
+        "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?AX_FEATURE_SPOKENCONTENT"
+    )
+    #expect(
+        SystemSettingsDestination.accessibility(anchor: "AX_ZOOM_MAX_FACTOR").url.absoluteString ==
+        "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?AX_ZOOM_MAX_FACTOR"
+    )
+}
+
+@Test
 @MainActor
 func controllerAcceptsOnlyUniqueAppBundles() {
     let controller = PermissionFlowController()

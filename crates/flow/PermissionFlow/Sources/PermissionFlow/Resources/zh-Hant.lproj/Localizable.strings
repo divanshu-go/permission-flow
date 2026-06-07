@@ -8,6 +8,7 @@
 "permission_flow.pane.full_disk_access" = "完整磁碟存取";
 "permission_flow.pane.input_monitoring" = "輸入監控";
 "permission_flow.pane.media_apple_music" = "媒體與 Apple Music";
+"permission_flow.pane.microphone" = "麥克風";
 "permission_flow.pane.screen_recording" = "螢幕錄製";
 "permission_flow.drag.description" = "將此 App 拖入「系統設定」中的授權列表。";
 "permission_flow.drag.label" = "拖曳";

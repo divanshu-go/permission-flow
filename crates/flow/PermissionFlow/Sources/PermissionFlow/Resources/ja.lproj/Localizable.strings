@@ -8,6 +8,7 @@
 "permission_flow.pane.full_disk_access" = "フルディスクアクセス";
 "permission_flow.pane.input_monitoring" = "入力監視";
 "permission_flow.pane.media_apple_music" = "メディアとApple Music";
+"permission_flow.pane.microphone" = "マイク";
 "permission_flow.pane.screen_recording" = "画面収録";
 "permission_flow.drag.description" = "このアプリを「システム設定」の認可リストにドラッグしてください。";
 "permission_flow.drag.label" = "ドラッグ";

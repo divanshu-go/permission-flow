@@ -57,7 +57,7 @@ struct ContentView: View {
                 Text("Each button opens the corresponding system settings privacy page. Only permission pages that support drag-and-drop app addition will show the floating authorization window. It's recommended to drag in the current Example.app by default.")
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
-                Text("Permission pages like Automation, Camera, Microphone, and Files & Folders that don't natively support drag-and-drop app addition will only open the settings interface without showing the floating window.")
+                Text("Permission pages like Automation, Camera, and Files & Folders that don't natively support drag-and-drop app addition will only open the settings interface without showing the floating window. Microphone uses the system authorization prompt.")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.primary)
 #else
@@ -106,6 +106,7 @@ struct ContentView: View {
                 PermissionFlowButton(title: "Full DiskAccess", pane: .fullDiskAccess)
                 PermissionFlowButton(title: "Input Monitoring", pane: .inputMonitoring)
                 PermissionFlowButton(title: "Media AppleMusic", pane: .mediaAppleMusic)
+                PermissionFlowButton(title: "Microphone", pane: .microphone)
                 PermissionFlowButton(title: "Screen Recording", pane: .screenRecording)
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), alignment: .leading)], spacing: 5) {
@@ -116,6 +117,7 @@ struct ContentView: View {
                 PermissionFlowButton(pane: .fullDiskAccess)
                 PermissionFlowButton(pane: .inputMonitoring)
                 PermissionFlowButton(pane: .mediaAppleMusic)
+                PermissionFlowButton(pane: .microphone)
                 PermissionFlowButton(pane: .screenRecording)
             }
 #endif
@@ -227,8 +229,12 @@ struct ContentView: View {
                     settingsURLButton(title: "Media & Apple Music", subtitle: "Navigate to Privacy & Security > Media & Apple Music", symbolName: "music.note.list", tint: .red) {
                         SystemSettings.open(.privacy(anchor: .privacyMedia))
                     }
-                    settingsURLButton(title: "Microphone", subtitle: "Navigate to Privacy & Security > Microphone", symbolName: "mic", tint: .red) {
-                        SystemSettings.open(.privacy(anchor: .privacyMicrophone))
+                    settingsURLButton(title: "Microphone", subtitle: "Request Microphone permission and show Privacy & Security > Microphone", symbolName: "mic", tint: .red) {
+                        MicrophonePermissionStatusProvider().requestAuthorization { _ in
+                            Task { @MainActor in
+                                SystemSettings.open(.privacy(anchor: .privacyMicrophone))
+                            }
+                        }
                     }
                     settingsURLButton(title: "Motion & Fitness", subtitle: "Navigate to Privacy & Security > Motion & Fitness", symbolName: "figure.walk", tint: .green) {
                         SystemSettings.open(.privacy(anchor: .privacyMotion))
@@ -268,7 +274,7 @@ struct ContentView: View {
                 buttons: {
                     settingsURLButton(title: "Apple ID", symbolName: "person.crop.circle", tint: .blue) { SystemSettings.open(SystemSettingsDestination(paneIdentifier: "com.apple.systempreferences.AppleIDSettings")) }
                     settingsURLButton(title: "Appearance", symbolName: "circle.lefthalf.filled", tint: .gray) { SystemSettings.open(SystemSettingsDestination(paneIdentifier: "com.apple.Appearance-Settings.extension")) }
-                    settingsURLButton(title: "Accessibility", symbolName: "accessibility", tint: .blue) { SystemSettings.open(SystemSettingsDestination(paneIdentifier: "com.apple.Accessibility-Settings.extension")) }
+                    settingsURLButton(title: "Accessibility", symbolName: "accessibility", tint: .blue) { SystemSettings.open(.accessibility) }
                     settingsURLButton(title: "Bluetooth", symbolName: "bolt.horizontal.circle", tint: .blue) { SystemSettings.open(.bluetooth) }
                     settingsURLButton(title: "Battery", symbolName: "battery.100", tint: .green) { SystemSettings.open(SystemSettingsDestination(paneIdentifier: "com.apple.Battery-Settings.extension")) }
                     settingsURLButton(title: "Date & Time", symbolName: "calendar", tint: .orange) { SystemSettings.open(SystemSettingsDestination(paneIdentifier: "com.apple.Date-Time-Settings.extension")) }
@@ -279,7 +285,38 @@ struct ContentView: View {
                     settingsURLButton(title: "Network", symbolName: "network", tint: .cyan) { SystemSettings.open(SystemSettingsDestination(paneIdentifier: "com.apple.Network-Settings.extension")) }
                     settingsURLButton(title: "Passwords", symbolName: "key", tint: .yellow) { SystemSettings.open(SystemSettingsDestination(paneIdentifier: "com.apple.Passwords")) }
                     settingsURLButton(title: "Wallpaper", symbolName: "photo.on.rectangle", tint: .purple) { SystemSettings.open(.wallpaper) }
+                    settingsURLButton(title: "Wi-Fi", symbolName: "wifi", tint: .blue) { SystemSettings.open(.wifi) }
+                    settingsURLButton(title: "VPN", symbolName: "lock.shield", tint: .indigo) { SystemSettings.open(.vpn) }
                     settingsURLButton(title: "Screen Saver", symbolName: "sparkles.tv", tint: .pink) { SystemSettings.open(SystemSettingsDestination(paneIdentifier: "com.apple.Wallpaper-Settings.extension", anchor: "ScreenSaver")) }
+                }
+            )
+
+            settingsURLGroup(
+                title: "Wi-Fi Sub-pages",
+                buttons: {
+                    settingsURLButton(title: "Wi-Fi Main", subtitle: "Navigate to Wi-Fi > Main", symbolName: "wifi", tint: .blue) { SystemSettings.open(.wifi(anchor: .generalMain)) }
+                    settingsURLButton(title: "Join Network", subtitle: "Navigate to Wi-Fi > Join Network", symbolName: "plus.circle", tint: .green) { SystemSettings.open(.wifi(anchor: .generalJoin)) }
+                    settingsURLButton(title: "Network Details", subtitle: "Navigate to Wi-Fi > Details", symbolName: "info.circle", tint: .cyan) { SystemSettings.open(.wifi(anchor: .generalDetails)) }
+                    settingsURLButton(title: "Advanced", subtitle: "Navigate to Wi-Fi > Advanced", symbolName: "slider.horizontal.3", tint: .gray) { SystemSettings.open(.wifi(anchor: .advanced)) }
+                }
+            )
+
+            settingsURLGroup(
+                title: "VPN Sub-pages",
+                buttons: {
+                    settingsURLButton(title: "VPN", subtitle: "Navigate to VPN > VPN", symbolName: "lock.shield", tint: .indigo) { SystemSettings.open(.vpn(anchor: .vpn)) }
+                    settingsURLButton(title: "VPN on Demand", subtitle: "Navigate to VPN > VPN on Demand", symbolName: "bolt.shield", tint: .purple) { SystemSettings.open(.vpn(anchor: .vpnOnDemand)) }
+                }
+            )
+
+            settingsURLGroup(
+                title: "Accessibility Sub-pages",
+                buttons: {
+                    settingsURLButton(title: "Display", subtitle: "Navigate to Accessibility > Display", symbolName: "display", tint: .blue) { SystemSettings.open(.accessibility(anchor: .display)) }
+                    settingsURLButton(title: "VoiceOver", subtitle: "Navigate to Accessibility > VoiceOver", symbolName: "speaker.wave.2", tint: .purple) { SystemSettings.open(.accessibility(anchor: .voiceOver)) }
+                    settingsURLButton(title: "Zoom", subtitle: "Navigate to Accessibility > Zoom", symbolName: "plus.magnifyingglass", tint: .indigo) { SystemSettings.open(.accessibility(anchor: .zoom)) }
+                    settingsURLButton(title: "Spoken Content", subtitle: "Navigate to Accessibility > Spoken Content", symbolName: "text.bubble", tint: .orange) { SystemSettings.open(.accessibility(anchor: .spokenContent)) }
+                    settingsURLButton(title: "Raw Anchor", subtitle: "Navigate with raw anchor AX_ZOOM_MAX_FACTOR", symbolName: "link", tint: .gray) { SystemSettings.open(.accessibility(anchor: "AX_ZOOM_MAX_FACTOR")) }
                 }
             )
 
@@ -296,6 +333,23 @@ struct ContentView: View {
                     settingsURLButton(title: "Ambient Display", subtitle: "Navigate to Displays > Ambient Display", symbolName: "sparkles", tint: .purple) { SystemSettings.open(.displays(anchor: .ambienceSection)) }
                     settingsURLButton(title: "Display Characteristics", subtitle: "Navigate to Displays > Display Characteristics", symbolName: "dial.medium", tint: .teal) { SystemSettings.open(.displays(anchor: .characteristicSection)) }
                     settingsURLButton(title: "Miscellaneous", subtitle: "Navigate to Displays > Miscellaneous", symbolName: "ellipsis.circle", tint: .secondary) { SystemSettings.open(.displays(anchor: .miscellaneousSection)) }
+                }
+            )
+
+            settingsURLGroup(
+                title: "Login Items Sub-pages",
+                buttons: {
+                    settingsURLButton(title: "Extension Items", subtitle: "Navigate to Login Items > Extension Items", symbolName: "puzzlepiece.extension", tint: .purple) { SystemSettings.open(.loginItems(anchor: .extensionItems)) }
+                    settingsURLButton(title: "Share Menu", subtitle: "Navigate to Login Items & Extensions > Share Menu", symbolName: "square.and.arrow.up", tint: .teal) { SystemSettings.open(.loginItems(extensionPointIdentifier: .shareServices)) }
+                    settingsURLButton(title: "Actions", subtitle: "Navigate to Login Items & Extensions > Actions", symbolName: "wand.and.sparkles", tint: .pink) { SystemSettings.open(.loginItems(extensionPointIdentifier: .actions)) }
+                    settingsURLButton(title: "Photo Editing", subtitle: "Navigate to Login Items & Extensions > Photo Editing", symbolName: "photo", tint: .orange) { SystemSettings.open(.loginItems(extensionPointIdentifier: .photoEditing)) }
+                    settingsURLButton(title: "Spotlight Importers", subtitle: "Navigate to Login Items & Extensions > Spotlight", symbolName: "magnifyingglass", tint: .blue) { SystemSettings.open(.loginItems(extensionPointIdentifier: .spotlightImporter)) }
+                    settingsURLButton(title: "Quick Look Previews", subtitle: "Navigate to Login Items & Extensions > Quick Look", symbolName: "eye", tint: .indigo) { SystemSettings.open(.loginItems(extensionPointIdentifier: .quickLookPreview)) }
+                    settingsURLButton(title: "File Providers", subtitle: "Navigate to Login Items & Extensions > File Providers", symbolName: "externaldrive.connected.to.line.below", tint: .mint) { SystemSettings.open(.loginItems(extensionPointIdentifier: .fileProvider)) }
+                    settingsURLButton(title: "Finder Quick Actions", subtitle: "Navigate to Login Items & Extensions > Finder Quick Actions", symbolName: "folder.badge.gearshape", tint: .green) { SystemSettings.open(.loginItems(extensionPointIdentifier: .finderQuickActions)) }
+                    settingsURLButton(title: "Touch Bar Quick Actions", subtitle: "Navigate to Login Items & Extensions > Touch Bar Quick Actions", symbolName: "rectangle.inset.filled", tint: .gray) { SystemSettings.open(.loginItems(extensionPointIdentifier: .touchBarQuickActions)) }
+                    settingsURLButton(title: "Legacy Dock Tiles", subtitle: "Navigate to Login Items & Extensions > Legacy Dock Tiles", symbolName: "dock.rectangle", tint: .blue) { SystemSettings.open(.loginItems(extensionPointIdentifier: .legacyDockTiles)) }
+                    settingsURLButton(title: "Legacy Spotlight Importers", subtitle: "Navigate to Login Items & Extensions > Legacy Spotlight Importers", symbolName: "magnifyingglass.circle", tint: .indigo) { SystemSettings.open(.loginItems(extensionPointIdentifier: .legacySpotlightImporter)) }
                 }
             )
 
@@ -546,6 +600,7 @@ struct ContentView: View {
                     sourceFrameInScreen: sourceFrame
                 )
             }
+            MicrophonePermissionCard()
             PermissionCard(
                 title: "Screen Recording",
                 subtitle: "Screen recording authorization example.",
@@ -686,6 +741,113 @@ struct ContentView: View {
 }
 
 #if os(macOS)
+private struct MicrophonePermissionCard: View {
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var authorizationState: PermissionAuthorizationState = .checking
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                Image(systemName: "mic")
+                    .font(.system(size: 16, weight: .semibold))
+                    .frame(width: 32, height: 32)
+                    .background(Color.red.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                    .foregroundStyle(.red)
+                Spacer()
+                statusBadge
+            }
+            Text("Microphone").font(.system(size: 18, weight: .semibold))
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Microphone authorization example using the system privacy prompt.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    requestAuthorization()
+                } label: {
+                    Label(buttonTitle, systemImage: buttonState.systemImage)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .controlSize(.small)
+                Text("Status: \(statusText)")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.black.opacity(0.045), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.05), radius: 14, y: 5)
+        .onAppear(perform: refreshAuthorizationStatus)
+        .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                refreshAuthorizationStatus()
+            }
+        }
+    }
+
+    private var buttonState: PermissionFlowButtonState {
+        PermissionFlowButtonState.make(from: authorizationState)
+    }
+
+    private var buttonTitle: String {
+        switch authorizationState {
+        case .granted:
+            "Granted"
+        case .checking:
+            "Checking..."
+        case .notGranted, .unknown:
+            "Request Microphone"
+        }
+    }
+
+    private var statusText: String {
+        switch authorizationState {
+        case .granted:
+            "Granted"
+        case .notGranted:
+            "Not Granted"
+        case .unknown:
+            "Unknown"
+        case .checking:
+            "Checking..."
+        }
+    }
+
+    private var statusBadge: some View {
+        Label(statusText, systemImage: buttonState.systemImage)
+            .font(.system(size: 10.5, weight: .medium))
+            .labelStyle(.titleAndIcon)
+            .foregroundStyle(buttonState.isGranted ? .green : .secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill((buttonState.isGranted ? Color.green : Color.secondary).opacity(0.12))
+            )
+    }
+
+    private func refreshAuthorizationStatus() {
+        authorizationState = MicrophonePermissionStatusProvider().authorizationState()
+    }
+
+    private func requestAuthorization() {
+        authorizationState = .checking
+        MicrophonePermissionStatusProvider().requestAuthorization { authorizationState in
+            Task { @MainActor in
+                self.authorizationState = authorizationState
+                SystemSettings.open(.privacy(anchor: .privacyMicrophone))
+            }
+        }
+    }
+}
+
 private struct PermissionCard: View {
     let title: String
     let subtitle: String

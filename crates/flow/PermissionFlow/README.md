@@ -1,6 +1,7 @@
 <div align="left">
   <sup>Using <a href="https://wangchujiang.com/#/app" target="_blank">my app</a> is also a way to <a href="https://wangchujiang.com/#/sponsor" target="_blank">support</a> me:</sup>
   <br>
+  <a target="_blank" href="https://jaywcjlove.github.io/maslink/?id=6766860898" title="Zipora: Zip/RAR/7Z Unarchiver"><img alt="Zipora: Zip/RAR/7Z Unarchiver" height="52" src="https://wangchujiang.com/appicon/zipora.png"></a>
   <a target="_blank" href="https://jaywcjlove.github.io/maslink/?id=6758053530" title="Scap: Screenshot & Markup Edit for macOS"><img alt="Scap: Screenshot & Markup Edit" height="52" src="https://wangchujiang.com/appicon/scap.png"></a>
   <a target="_blank" href="https://jaywcjlove.github.io/maslink/?id=6757317079" title="Screen Test for macOS"><img alt="Screen Test" height="52" src="https://wangchujiang.com/appicon/screen-test.png"></a>
   <a target="_blank" href="https://jaywcjlove.github.io/maslink/?id=6755948110" title="Deskmark for macOS"><img alt="Deskmark" height="52" src="https://wangchujiang.com/appicon/deskmark.png"></a>
@@ -55,7 +56,7 @@ It opens the correct privacy page automatically and, for panes that support drag
 
 ## Features
 
-- **Real-time host-app permission status display**: Buttons can show what the current host app reports about its own permission state, with visual feedback
+- **Real-time permission status display**: Buttons automatically show whether permissions are granted with visual feedback (green checkmark for granted, blue arrow for not granted)
 - Opens the target `System Settings` privacy pane automatically
 - Animates the floating panel from the click position to the `System Settings` window
 - Follows the `System Settings` window while it moves
@@ -63,7 +64,7 @@ It opens the correct privacy page automatically and, for panes that support drag
 - Keeps only one active floating panel at a time
 - Closes the floating panel automatically when `System Settings` closes
 - Supports adaptive floating panel height based on content
-- **Intelligent permission detection**: Uses public Apple APIs and heuristics to infer the current host app's permission state without triggering system prompts
+- **Intelligent permission detection**: Uses official Apple APIs for accurate permission status checking without triggering system prompts
 
 ## Requirements
 
@@ -141,32 +142,79 @@ Platform support:
 
 ## Supported Permission Panes
 
-`PermissionFlow` covers these 8 privacy panes that support the floating drag-and-drop authorization workflow:
+`PermissionFlow` covers these privacy panes. Most use the floating drag-and-drop authorization workflow; `.microphone` uses the system microphone prompt instead.
 
 - `.accessibility`: Opens `Privacy & Security > Accessibility`. ✅ **Status Detection Supported**
 - `.fullDiskAccess`: Opens `Privacy & Security > Full Disk Access`. ✅ **Status Detection Supported**
 - `.inputMonitoring`: Opens `Privacy & Security > Input Monitoring`. ✅ **Status Detection Supported**
 - `.screenRecording`: Opens `Privacy & Security > Screen Recording`. ✅ **Status Detection Supported**
+- `.microphone`: Requests microphone authorization and opens `Privacy & Security > Microphone` when settings access is needed. ✅ **Status Detection Supported**
 - `.bluetooth`: Opens `Privacy & Security > Bluetooth`. ✅ **Supports status detection**
 - `.mediaAppleMusic`: Opens `Privacy & Security > Media & Apple Music`. ✅ **Supports status detection**
 - `.appManagement`: Opens `Privacy & Security > App Management`. ⚠️ Status detection not available
 - `.developerTools`: Opens `Privacy & Security > Developer Tools`. ⚠️ Status detection not available
 
-**Permission Status Display**: For supported permissions, `PermissionFlowButton` automatically displays the current host app's authorization status:
+**Permission Status Display**: For supported permissions, `PermissionFlowButton` automatically displays the current authorization status:
 - ✅ **Granted**: Green checkmark icon with "Granted" text
 - ➡️ **Not Granted**: Blue arrow icon with "Grant" text  
-- Built into `PermissionFlow`: `.accessibility`, `.fullDiskAccess`
+- Built into `PermissionFlow`: `.accessibility`, `.fullDiskAccess`, `.microphone`
 - Available through optional status extensions: `.bluetooth`, `.inputMonitoring`, `.mediaAppleMusic`, `.screenRecording`
 - 🔄 **Checking**: Clock icon with "Checking..." text
 - ❓ **Unknown**: Blue arrow icon with "Open" text (for unsupported detection)
 
-Important:
-
-- These checks are about the current host app or process.
-- They do **not** verify whether an arbitrary `.app` bundle passed through `suggestedAppURLs` already has the permission.
-- If you guide users to grant permission to some other app, treat the status UI as host-app information only.
-
 For every other `System Settings` page or privacy subsection, use `SystemSettingsKit`.
+
+## Info.plist Privacy Descriptions
+
+Permissions that trigger Apple's system privacy prompt must include the matching usage description in the host app's `Info.plist`. If the host macOS app uses App Sandbox, also enable the matching entitlement in **Signing & Capabilities > App Sandbox**.
+
+### Microphone
+
+Use this when requesting `.microphone` or calling Apple's microphone authorization APIs.
+
+```xml
+<key>NSMicrophoneUsageDescription</key>
+<string>This app needs microphone access for audio recording.</string>
+```
+
+For sandboxed macOS apps, turn on `Audio Input`, or add:
+
+```xml
+<key>com.apple.security.device.audio-input</key>
+<true/>
+```
+
+### Camera
+
+Use this when requesting camera access.
+
+```xml
+<key>NSCameraUsageDescription</key>
+<string>This app needs camera access for video capture.</string>
+```
+
+For sandboxed macOS apps, turn on `Camera`, or add:
+
+```xml
+<key>com.apple.security.device.camera</key>
+<true/>
+```
+
+### Apple Events
+
+Use this when your app sends Apple Events, such as automating or controlling another app.
+
+```xml
+<key>NSAppleEventsUsageDescription</key>
+<string>This app needs to control other apps for authorization guidance.</string>
+```
+
+For sandboxed macOS apps, turn on `Apple Events`, or add:
+
+```xml
+<key>com.apple.security.automation.apple-events</key>
+<true/>
+```
 
 ## Quick Start
 
@@ -209,7 +257,7 @@ struct MyApp: App {
 }
 ```
 
-### Manual host-app status display
+### Manual status display
 
 ```swift
 import AppKit
@@ -270,10 +318,6 @@ struct ManualPermissionButton: View {
     }
 }
 ```
-
-The example above checks the current host app's status. It should not be treated
-as a general-purpose "does any arbitrary target app already have this
-permission?" API.
 
 ### Manual controller usage
 
@@ -341,6 +385,15 @@ PermissionFlowButton(
     suggestedAppURLs: [Bundle.main.bundleURL],
     configuration: .init()
 )
+
+PermissionFlowButton(
+    pane: .screenRecording,
+    suggestedAppURLs: [Bundle.main.bundleURL],
+    configuration: .init()
+) { buttonState in
+    Label("Open Screen Recording", systemImage: buttonState.systemImage)
+        .foregroundStyle(buttonState.isGranted ? .green : .primary)
+}
 ```
 
 ### `PermissionFlow.makeController`
@@ -431,8 +484,16 @@ The package includes a few common helpers:
 - `.wallpaper`
 - `.displays`
 - `.displays(anchor:)`
+- `.accessibility`
+- `.accessibility(anchor:)`
 - `.bluetooth`
 - `.loginItems`
+- `.loginItems(anchor:)`
+- `.loginItems(extensionPointIdentifier:)`
+- `.wifi`
+- `.wifi(anchor:)`
+- `.vpn`
+- `.vpn(anchor:)`
 - `.privacy(anchor:)`
 
 ### Privacy anchors
@@ -446,7 +507,7 @@ SystemSettings.open(.privacy(anchor: .privacyAccessibility))
 SystemSettings.open(.privacy(anchor: .security))
 ```
 
-The existing `PermissionFlowPane` type continues to handle the privacy pages used by the floating authorization workflow.
+The existing `PermissionFlowPane` type continues to handle the privacy pages used by the authorization workflow.
 
 - `.appManagement`: Opens `Privacy & Security > App Management`.
 - `.accessibility`: Opens `Privacy & Security > Accessibility`.
@@ -455,6 +516,7 @@ The existing `PermissionFlowPane` type continues to handle the privacy pages use
 - `.fullDiskAccess`: Opens `Privacy & Security > Full Disk Access`.
 - `.inputMonitoring`: Opens `Privacy & Security > Input Monitoring`.
 - `.mediaAppleMusic`: Opens `Privacy & Security > Media & Apple Music`.
+- `.microphone`: Requests microphone authorization and opens `Privacy & Security > Microphone` when settings access is needed.
 - `.screenRecording`: Opens `Privacy & Security > Screen Recording`.
 
 Available typed privacy anchors and their destinations:
@@ -517,6 +579,108 @@ Available display anchors and their destinations:
 - `.profileSection`: `Displays > Color Profile`
 - `.resolutionSection`: `Displays > Resolution`
 - `.sidecarSection`: `Displays > Sidecar`
+
+### Login Items anchors
+
+Login Items supports typed subsection anchors:
+
+```swift
+SystemSettings.open(.loginItems)
+SystemSettings.open(.loginItems(anchor: .extensionItems))
+SystemSettings.open(.loginItems(extensionPointIdentifier: .quickLookPreview))
+SystemSettings.open(.loginItems(extensionPointIdentifier: .shareServices))
+```
+
+Available login item anchors and extension point helpers:
+
+- `.extensionItems`: `Login Items > Extension Items`
+- `.shareServices`: `extensionPointIdentifier=com.apple.share-services`
+- `.actions`: `extensionPointIdentifier=com.apple.ui-services`
+- `.photoEditing`: `extensionPointIdentifier=com.apple.photo-editing`
+- `.spotlightImporter`: `extensionPointIdentifier=com.apple.spotlight.import`
+- `.quickLookPreview`: `Login Items & Extensions > Extensions > Quick Look`, using `extensionPointIdentifier=com.apple.quicklook.preview`
+- `.fileProvider`: `extensionPointIdentifier=com.apple.fileprovider-nonui`
+- `.finderQuickActions`: `extensionPointIdentifier=com.apple.finder-quick-actions`
+- `.touchBarQuickActions`: `extensionPointIdentifier=com.apple.touchbar-quick-actions`
+- `.legacyDockTiles`: `extensionPointIdentifier=com.apple.extensionkit.legacy-plugins.docktiles`
+- `.legacySpotlightImporter`: `extensionPointIdentifier=com.apple.extensionkit.legacy-plugins.spotlight-importer`
+
+### Wi-Fi anchors
+
+Wi-Fi supports typed subsection anchors:
+
+```swift
+SystemSettings.open(.wifi)
+SystemSettings.open(.wifi(anchor: .generalMain))
+SystemSettings.open(.wifi(anchor: .generalJoin))
+SystemSettings.open(.wifi(anchor: .generalDetails))
+SystemSettings.open(.wifi(anchor: .advanced))
+```
+
+Available Wi-Fi anchors and their destinations:
+
+- `.advanced`: `Wi-Fi > Advanced`
+- `.generalDetails`: `Wi-Fi > Details`
+- `.generalJoin`: `Wi-Fi > Join`
+- `.generalMain`: `Wi-Fi > Main`
+
+### VPN anchors
+
+VPN supports typed subsection anchors:
+
+```swift
+SystemSettings.open(.vpn)
+SystemSettings.open(.vpn(anchor: .vpn))
+SystemSettings.open(.vpn(anchor: .vpnOnDemand))
+```
+
+Available VPN anchors and their destinations:
+
+- `.vpn`: `VPN > VPN`
+- `.vpnOnDemand`: `VPN > VPN on Demand`
+
+### Accessibility anchors
+
+Accessibility has a typed helper for common sections and a raw string fallback for detailed control-level anchors:
+
+```swift
+SystemSettings.open(.accessibility)
+SystemSettings.open(.accessibility(anchor: .display))
+SystemSettings.open(.accessibility(anchor: .voiceOver))
+SystemSettings.open(.accessibility(anchor: "AX_ZOOM_MAX_FACTOR"))
+```
+
+Available common accessibility anchors:
+
+- `.display`: `Accessibility > Display`
+- `.text`: `Accessibility > Text`
+- `.pointer`: `Accessibility > Pointer`
+- `.mouseAndTrackpad`: `Accessibility > Mouse & Trackpad`
+- `.headphones`: `Accessibility > Headphones`
+- `.voiceOver`: `Accessibility > VoiceOver`
+- `.zoom`: `Accessibility > Zoom`
+- `.displayFilters`: `Accessibility > Display Filters`
+- `.backgroundSounds`: `Accessibility > Background Sounds`
+- `.spokenContent`: `Accessibility > Spoken Content`
+- `.captions`: `Accessibility > Captions`
+- `.audio`: `Accessibility > Audio`
+- `.descriptions`: `Accessibility > Audio Descriptions`
+- `.keyboard`: `Accessibility > Keyboard`
+- `.fullKeyboardAccess`: `Accessibility > Full Keyboard Access`
+- `.stickyKeys`: `Accessibility > Sticky Keys`
+- `.slowKeys`: `Accessibility > Slow Keys`
+- `.virtualKeyboard`: `Accessibility > Accessibility Keyboard`
+- `.voiceControl`: `Accessibility > Voice Control`
+- `.switchControl`: `Accessibility > Switch Control`
+- `.alternateMouseButtons`: `Accessibility > Alternate Mouse Buttons`
+- `.headMouse`: `Accessibility > Head Pointer`
+- `.mouseKeys`: `Accessibility > Mouse Keys`
+- `.hoverText`: `Accessibility > Hover Text`
+- `.hoverTyping`: `Accessibility > Hover Typing`
+- `.liveSpeech`: `Accessibility > Live Speech`
+- `.personalVoice`: `Accessibility > Personal Voice`
+- `.siri`: `Accessibility > Siri`
+- `.shortcut`: `Accessibility > Accessibility Shortcut`
 
 ## Configuration
 

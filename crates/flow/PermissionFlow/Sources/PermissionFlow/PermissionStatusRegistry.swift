@@ -18,6 +18,7 @@ public enum PermissionStatusRegistry {
     private static var registeredProviders: [PermissionFlowPane: any PermissionStatusProviding] = [
         .accessibility: AccessibilityPermissionStatusProvider(),
         .fullDiskAccess: FullDiskAccessPermissionStatusProvider(),
+        .microphone: MicrophonePermissionStatusProvider(),
     ]
 
     /// Registers or replaces a provider for a specific permission pane.
