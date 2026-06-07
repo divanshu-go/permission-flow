@@ -24,4 +24,4 @@ thiserror = "2"
 permission-flow = { version = "0.1.40", path = "../flow" }
 
 [build-dependencies]
-tauri-plugin = { version = "2.5.4", features = ["build"] }
+tauri-plugin = { version = "2.5.3", features = ["build"] }
