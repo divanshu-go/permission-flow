@@ -7,9 +7,11 @@ import SwiftUI
 @MainActor
 final class FloatingDropPanel: NSPanel {
     private weak var panelController: PermissionFlowController?
+    private let clippingView: NSView
     private let hostingView: NSHostingView<AnyView>
     private let sizingView: NSHostingView<AnyView>
     private let initialPanelWidth: CGFloat = 420
+    private let panelCornerRadius: CGFloat = 18
 
     /// System Settings has a leading sidebar. Matching the trailing content
     /// area width keeps the floating panel visually aligned with the pane that
@@ -36,6 +38,7 @@ final class FloatingDropPanel: NSPanel {
         panelController = controller
         localeIdentifier = controller.localeIdentifier
         let panelView = Self.makePanelView(controller: controller, localeIdentifier: controller.localeIdentifier)
+        clippingView = NSView(frame: .zero)
         hostingView = NSHostingView(rootView: panelView)
         sizingView = NSHostingView(rootView: panelView)
         super.init(
@@ -55,8 +58,25 @@ final class FloatingDropPanel: NSPanel {
         hidesOnDeactivate = false
         animationBehavior = .utilityWindow
 
+        clippingView.translatesAutoresizingMaskIntoConstraints = false
+        clippingView.wantsLayer = true
+        clippingView.layer?.backgroundColor = NSColor.clear.cgColor
+        clippingView.layer?.cornerRadius = panelCornerRadius
+        clippingView.layer?.masksToBounds = true
+        clippingView.layer?.cornerCurve = .continuous
+
         hostingView.translatesAutoresizingMaskIntoConstraints = false
-        contentView = hostingView
+        hostingView.wantsLayer = true
+        hostingView.layer?.backgroundColor = NSColor.clear.cgColor
+
+        contentView = clippingView
+        clippingView.addSubview(hostingView)
+        NSLayoutConstraint.activate([
+            hostingView.leadingAnchor.constraint(equalTo: clippingView.leadingAnchor),
+            hostingView.trailingAnchor.constraint(equalTo: clippingView.trailingAnchor),
+            hostingView.topAnchor.constraint(equalTo: clippingView.topAnchor),
+            hostingView.bottomAnchor.constraint(equalTo: clippingView.bottomAnchor),
+        ])
         setContentSize(CGSize(width: initialPanelWidth, height: measuredPanelHeight(for: initialPanelWidth)))
     }
 
