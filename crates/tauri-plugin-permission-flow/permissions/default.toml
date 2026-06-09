@@ -7,3 +7,4 @@ permissions = [
     "allow-start-flow",
     "allow-stop-current-flow",
 ]
+platforms = ["macOS"]
