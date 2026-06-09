@@ -212,10 +212,11 @@ mod macos_impl {
 
 #[cfg(not(target_os = "macos"))]
 mod stub_impl {
+    use std::marker::PhantomData;
     use std::sync::atomic::{AtomicU64, Ordering};
 
     use serde::de::DeserializeOwned;
-    use tauri::{AppHandle, Manager, ResourceId, Runtime, plugin::PluginApi};
+    use tauri::{AppHandle, Manager, Resource, ResourceId, Runtime, plugin::PluginApi};
 
     use crate::Result;
     use crate::models::*;
@@ -243,8 +244,9 @@ mod stub_impl {
             // Return a dummy resource id
             let controller_id = self.next_controller_id.fetch_add(1, Ordering::Relaxed);
             let mut resources_table = self.app.resources_table();
-            let rid = resources_table.add(PermissionFlowHandle {
+            let rid = resources_table.add(PermissionFlowHandle::<R> {
                 controller_id,
+                _runtime: PhantomData,
             });
             Ok(rid)
         }
@@ -274,15 +276,23 @@ mod stub_impl {
     }
 
     /// A stub resource handle for non-macOS platforms.
-    pub struct PermissionFlowHandle {
+    ///
+    /// Mirrors the macOS handle's `PermissionFlowHandle<R>` shape so the shared
+    /// `commands` module can resolve it from the Tauri resource table the same
+    /// way on every platform. The runtime parameter is unused here, hence the
+    /// `PhantomData`.
+    pub struct PermissionFlowHandle<R: Runtime> {
         controller_id: u64,
+        _runtime: PhantomData<fn() -> R>,
     }
 
-    impl PermissionFlowHandle {
+    impl<R: Runtime> PermissionFlowHandle<R> {
         pub fn controller_id(&self) -> u64 {
             self.controller_id
         }
     }
+
+    impl<R: Runtime> Resource for PermissionFlowHandle<R> {}
 }
 
 #[cfg(target_os = "macos")]

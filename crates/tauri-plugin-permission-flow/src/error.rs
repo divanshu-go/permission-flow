@@ -17,12 +17,19 @@ pub enum Error {
     DriverClosed,
     #[error(transparent)]
     Tauri(#[from] tauri::Error),
+    // The native `permission_flow` crate is a macOS-only dependency, so its
+    // error types only exist there. Gating the variants keeps `Error` buildable
+    // on non-macOS targets (Windows/Linux) where the plugin compiles as a stub.
+    #[cfg(target_os = "macos")]
     #[error(transparent)]
     NewController(#[from] permission_flow::NewControllerError),
+    #[cfg(target_os = "macos")]
     #[error(transparent)]
     StartFlow(#[from] permission_flow::StartPermissionFlowError),
+    #[cfg(target_os = "macos")]
     #[error(transparent)]
     StopFlow(#[from] permission_flow::StopPermissionFlowError),
+    #[cfg(target_os = "macos")]
     #[error(transparent)]
     PermissionStatus(#[from] permission_flow::PermissionStatusError),
     #[cfg(mobile)]
