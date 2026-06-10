@@ -1,5 +1,6 @@
 [package]
 name = "permission-flow"
+links = "permission-flow-bundle"
 edition.workspace = true
 version.workspace = true
 license.workspace = true
