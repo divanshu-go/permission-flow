@@ -178,7 +178,7 @@ private struct AppDragCardContent: View {
             VStack(spacing: 0) {
                 Image(systemName: "hand.draw")
                     .font(.system(size: 14, weight: .regular))
-                Text("permission_flow.drag.label", bundle: Bundle.module)
+                Text("permission_flow.drag.label", bundle: Bundle.permissionFlow)
                     .font(.system(size: 8, weight: .light))
             }
             .foregroundStyle(.secondary)
