@@ -128,6 +128,85 @@ It intentionally stays minimal:
 - one button
 - button state driven by the host-app authorization watcher
 
+## Bundling the resource bundle
+
+The SwiftPM target underlying this plugin ships a localized resource bundle
+(`PermissionFlow_PermissionFlow.bundle`). On Tauri hosts, that bundle has to be
+copied into your `.app`'s `Contents/Resources/` directory, otherwise the
+onboarding panel will fail to localize strings and may crash with
+`fatalError("could not load resource bundle...")` the first time a user opens
+it.
+
+This plugin's `build.rs` publishes the bundle's on-disk path via Cargo's
+`links`-key metadata, so consuming apps don't have to scan hashed Cargo
+`OUT_DIR`s to find it. The mechanism follows the official Cargo Book pattern
+("The links Manifest Key" + the `libz-sys` example).
+
+### Step 1 — read the bundle path from your app's `build.rs`
+
+```rust
+fn main() {
+    // ... your other build logic ...
+
+    #[cfg(target_os = "macos")]
+    {
+        // Cargo synthesizes this from `cargo:bundle-dir=...` emitted by this
+        // plugin's build script. The `DEP_<LINKS-NAME-UPPER>_<KEY-UPPER>`
+        // convention is documented in the Cargo Book; the LINKS name comes
+        // from `links = "tauri-plugin-permission-flow"` in our Cargo.toml.
+        println!(
+            "cargo:rerun-if-env-changed=DEP_TAURI_PLUGIN_PERMISSION_FLOW_BUNDLE_DIR"
+        );
+        let bundle_src = std::env::var("DEP_TAURI_PLUGIN_PERMISSION_FLOW_BUNDLE_DIR")
+            .expect(
+                "tauri-plugin-permission-flow did not publish bundle-dir; \
+                 ensure you're on a recent enough plugin revision.",
+            );
+
+        // Stage the bundle next to your Cargo manifest so Tauri's resource
+        // glob (see step 2) can pick it up.
+        let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+        let bundle_dst = std::path::PathBuf::from(&manifest_dir)
+            .join("PermissionFlow_PermissionFlow.bundle");
+        let _ = std::fs::remove_dir_all(&bundle_dst);
+        // Use any recursive copy helper you like; the bundle is a directory
+        // with .lproj subdirectories.
+        copy_dir_recursive(
+            std::path::Path::new(&bundle_src),
+            &bundle_dst,
+        )
+        .expect("failed to stage permission-flow resource bundle");
+    }
+}
+```
+
+### Step 2 — list the bundle in `tauri.conf.json`
+
+```jsonc
+{
+  "bundle": {
+    "resources": [
+      "PermissionFlow_PermissionFlow.bundle"
+    ]
+  }
+}
+```
+
+Tauri copies it into `Contents/Resources/PermissionFlow_PermissionFlow.bundle/`
+at package time. The Swift code in `permission-flow` uses a layered
+`Bundle.permissionFlow` resolver that finds the bundle at that path, falls
+back gracefully if it isn't there, and never `fatalError`s on first access.
+
+### Why this indirection?
+
+In principle the consuming app could read
+`DEP_PERMISSION_FLOW_BUNDLE_BUNDLE_DIR` directly from the underlying
+`permission-flow` crate, but Cargo's `DEP_*` metadata only propagates to
+**direct** dependents. Most Tauri apps depend on this plugin, not on the
+lower-level `permission-flow` crate, so they never see that env var. This
+plugin's `build.rs` re-emits the path under its own `links` key to bridge the
+hop.
+
 ## Notes
 
 - This plugin is intended for macOS.

@@ -25,15 +25,26 @@ fn main() {
         .with_package(SWIFT_PACKAGE_NAME, SWIFT_PACKAGE_PATH)
         .link();
 
-    // Emit the bundle path so consuming crates can read it via
-    // DEP_PERMISSION_FLOW_BUNDLE_BUNDLE_DIR without scanning hashed build dirs.
+    // Publish the SwiftPM resource bundle path so direct dependents can read
+    // it via `DEP_PERMISSION_FLOW_BUNDLE_BUNDLE_DIR`. Transitive consumers
+    // (Tauri apps depending on `tauri-plugin-permission-flow`) get it via
+    // that plugin's re-export.
     let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap());
-    let is_debug = std::env::var("DEBUG").as_deref() == Ok("true");
-    let configuration = if is_debug { "debug" } else { "release" };
-    let arch = match std::env::consts::ARCH {
-        "aarch64" => "arm64",
-        a => a,
+
+    // PROFILE handles custom profiles (release-dev, etc.) that DEBUG=true misses.
+    let configuration = match std::env::var("PROFILE").as_deref() {
+        Ok("release") => "release",
+        _ => "debug",
     };
+
+    // CARGO_CFG_TARGET_ARCH, not std::env::consts::ARCH — the latter is the
+    // host arch and produces wrong paths on cross-compiles (e.g. universal CI).
+    let arch = match std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() {
+        Ok("aarch64") => "arm64".to_string(),
+        Ok(a) => a.to_string(),
+        Err(_) => String::new(),
+    };
+
     let bundle_path = out_dir
         .join("swift-rs")
         .join(SWIFT_PACKAGE_NAME)
@@ -41,7 +52,8 @@ fn main() {
         .join(configuration)
         .join(BUNDLE_NAME);
 
-    if bundle_path.exists() {
-        println!("cargo:bundle-dir={}", bundle_path.display());
-    }
+    // Emit unconditionally; the path is deterministic. Consumers check
+    // existence themselves and distinguish "producer didn't run" (env unset)
+    // from "swift-rs build failed" (env set, path missing).
+    println!("cargo:bundle-dir={}", bundle_path.display());
 }
